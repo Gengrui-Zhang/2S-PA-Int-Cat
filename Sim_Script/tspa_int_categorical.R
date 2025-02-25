@@ -5,6 +5,10 @@ library(mnormt)
 library(dplyr)
 library(tidyverse)
 library(semlrtp)
+library(mirt)
+library(umx)
+library(OpenMx)
+library(R2spa)
 library(MplusAutomation)
 library(here)
 
@@ -15,9 +19,9 @@ lapply(r_scripts, source)
 # ========================================= Simulation Conditions ========================================= #
 
 DESIGNFACTOR <- createDesign(
-  N = c(10000, 25000, 50000),
-  num_cat = c(3, 5), # response categories
-  rel = c(0.7, 0.8, 0.9),
+  N = c(100, 250, 500),
+  # num_cat = c(3, 5),
+  rel = 0.8,
   gamma_xm = c(0, 0.3), # Two levels of the interaction effect
   skewness = c("symm", "skew")
 )
@@ -74,7 +78,7 @@ MODEL:
   Y*;
 
 OUTPUT:
-  sampstat standardized tech1;  
+  sampstat standardized tech1 CINTERVAL;  
   
 SAVEDATA:
   RESULTS = lms_results_repid.dat;
@@ -88,7 +92,7 @@ SAVEDATA:
 # Helper Function
 generate_dat <- function(condition, fixed_objects = NULL) {
   N <- condition$N
-  num_cats <- condition$num_cat
+  # num_cats <- condition$num_cat
   skewness <- condition$skewness
   gamma_xm <- condition$gamma_xm
   gamma_x <- fixed_objects$gamma_x
@@ -102,12 +106,12 @@ generate_dat <- function(condition, fixed_objects = NULL) {
   # Threshold
   if (condition$skewness == "symm") {
     thres_x <- matrix(rep(0, 3), nrow = 1)  # binary
-    col_vector <- c(-1.5, -0.5, 0.5, 1.5)
+    col_vector <- c(-1.5, -0.5, 0.5, 1.5) # multiple categories 
     thres_m <- matrix(rep(col_vector, times = 12), 
                      nrow = 4, ncol = 12, byrow = FALSE)
   } else {
     thres_x <- matrix(rep(0.9, 3), nrow = 1)  # binary
-    col_vector <- c(0.05, 0.75, 1.55, 2.55)
+    col_vector <- c(0.05, 0.75, 1.55, 2.55) # multiple categories 
     thres_m <- matrix(rep(col_vector, times = 12), 
                       nrow = 4, ncol = 12, byrow = FALSE)
   }
@@ -134,31 +138,32 @@ generate_dat <- function(condition, fixed_objects = NULL) {
   # Generate measurement indicators (latent)
   lambda_x = 1.7*seq(0.6, 0.8, length.out = num_eta1_ind)  # on normal ogive metric
   lambda_m = 1.7*seq(0.3, 0.85, length.out = num_eta2_ind)  # on normal ogive metric
-  err_var_x <- sum(lambda_x)^2*(1 - rel)/rel*seq(0.8, 0.2, length.out = num_eta1_ind)
-  err_var_x <- err_var_x/sum(err_var_x)
-  err_var_m <- sum(lambda_m)^2*(1 - rel)/rel*seq(0.8, 0.2, length.out = num_eta2_ind)
-  err_var_m <- err_var_m/sum(err_var_m)
+  # Set error variance of continuous indicators to 1 
+  # err_var_x <- sum(lambda_x)^2*(1 - rel)/rel*seq(0.8, 0.2, length.out = num_eta1_ind)
+  # err_var_x <- err_var_x/sum(err_var_x)
+  # err_var_m <- sum(lambda_m)^2*(1 - rel)/rel*seq(0.8, 0.2, length.out = num_eta2_ind)
+  # err_var_m <- err_var_m/sum(err_var_m)
   x_lat <- eta[, 1] %*% t(lambda_x) + matrix(rnorm(N * length(lambda_x), 
-                                                   sd = rep(sqrt(err_var_x), each = N)),
+                                                   sd = 1), # sd = 1
                                              nrow = N, ncol = length(lambda_x))
   m_lat <- eta[, 2] %*% t(lambda_m) + matrix(rnorm(N * length(lambda_m), 
-                                                   sd = rep(sqrt(err_var_m), each = N)),
+                                                   sd = 1),
                                              nrow = N, ncol = length(lambda_m))
   
   # Check if simulated continuous items are correctly parameterized
-  # test_df <- cbind(x_lat, m_lat, Y)
-  # colnames(test_df) <- c("x1", "x2", "x3",
-  #                        "m1", "m2", "m3", "m4", "m5", "m6",
-  #                        "m7", "m8", "m9", "m10", "m11", "m12",
-  #                        "y1", "y2", "y3"
-  #                        )
-  # mod <- "X =~ x1 + x2 + x3
-  #         M =~ m1 + m2 + m3 + m4 + m5 + m6 +
-  #             m7 + m8 + m9 + m10 + m11 + m12
-  #         Y =~ y1 + y2 + y3
-  #         Y ~ X + M"
-  # summary(sem(mod, test_df, std.lv = TRUE),
-  #         standardized = TRUE)
+  test_df <- cbind(x_lat, m_lat, Y)
+  colnames(test_df) <- c("x1", "x2", "x3",
+                         "m1", "m2", "m3", "m4", "m5", "m6",
+                         "m7", "m8", "m9", "m10", "m11", "m12",
+                         "y1", "y2", "y3"
+                         )
+  mod <- "X =~ x1 + x2 + x3
+          M =~ m1 + m2 + m3 + m4 + m5 + m6 +
+              m7 + m8 + m9 + m10 + m11 + m12
+          Y =~ y1 + y2 + y3
+          Y ~ X + M"
+  summary(sem(mod, test_df, std.lv = TRUE),
+          standardized = TRUE)
   
   # Generate measurement indicators (observed)
   #' Obtain categorical items
@@ -194,7 +199,7 @@ generate_dat <- function(condition, fixed_objects = NULL) {
 # ========================================= Data Analysis ========================================= #
 
 analyze_2spa <- function (condition, dat, fixed_objects = NULL) {
-  
+
   # Prepare factor scores
   fs_y <- get_fs(dat[c(paste0("y", 1:3))], std.lv = TRUE) # continuous indicators
   irt_x <- mirt(dat[c(paste0("x", 1:3))], 
@@ -257,26 +262,57 @@ analyze_2spa <- function (condition, dat, fixed_objects = NULL) {
                 mxAlgebra(b1 * sqrt(vx), name = "stdx_b1"),
                 mxAlgebra(b2 * sqrt(vm), name = "stdx_b2"),
                 mxAlgebra(b3 * sqrt(vx) * sqrt(vm), name = "stdx_b3"),
-                mxCI(c("stdx_b1", "stdx_b2", "stdx_b3"))),
+                mxCI(c("b1", "b2", "b3", "stdx_b1", "stdx_b2", "stdx_b3"))),
         data = fs_dat,
         mat_ld = matL, 
         mat_ev = matE)
   tspa_mx_fit <- mxRun(tspa_mx, intervals = TRUE)
+
+  # Extract Parameters
+  est_ust <- tspa_mx_fit$output$estimate[c("b1", "b2", "b3")]
+  se_ust <- tspa_mx_fit$output$standardErrors[c("b1", "b2", "b3"), ]
+  est_std <- c(tspa_mx_fit$output$algebras$m1.stdx_b1,
+               tspa_mx_fit$output$algebras$m1.stdx_b2,
+               tspa_mx_fit$output$algebras$m1.stdx_b3)
+  se_std <- c(mxSE(m1.stdx_b1, model = tspa_mx_fit),
+              mxSE(m1.stdx_b2, model = tspa_mx_fit),
+              mxSE(m1.stdx_b3, model = tspa_mx_fit))
+  ci <- tspa_mx_fit$output$confidenceIntervals
+  ci_ll_ust <- ci[c("b1", "b2", "b3"), "lbound"]
+  ci_ul_ust <- ci[c("b1", "b2", "b3"), "ubound"]
+  ci_ll_std <- ci[c("m1.stdx_b1[1,1]", "m1.stdx_b2[1,1]", "m1.stdx_b3[1,1]"), "lbound"]
+  ci_ul_std <- ci[c("m1.stdx_b1[1,1]", "m1.stdx_b2[1,1]", "m1.stdx_b3[1,1]"), "ubound"]
+  
+  # Create the output vector
+  out <- c(est_ust, se_ust, ci_ll_ust, ci_ul_ust, 
+           est_std, se_std, ci_ll_std, ci_ul_std)  
+  names(out) <- c("est_x_ust", "est_m_ust", "est_xm_ust",
+                  "se_x_ust", "se_m_ust", "se_xm_ust", 
+                  "ci_ll_x_ust", "ci_ll_m_ust", "ci_ll_xm_ust",
+                  "ci_ul_x_ust", "ci_ul_m_ust", "ci_ul_xm_ust",
+                  "est_x_std", "est_m_std", "est_xm_std",
+                  "se_x_std", "se_m_std", "se_xm_std", 
+                  "ci_ll_x_std", "ci_ll_m_std", "ci_ll_xm_std",
+                  "ci_ul_x_std", "ci_ul_m_std", "ci_ul_xm_std")
+  
+  # Return
+  return(out)
 }
 
 analyze_lms <- function (condition, dat, fixed_objects = NULL) {
+
   temp_session <- fixed_objects$temp_session
   dat_name <- file.path(temp_session,
-                        sprintf("sim_dat_%s.dat", condition$REPLICATION))
+                        sprintf("sim_dat_%s.dat", replication_counter))
   write.table(dat,
               file = dat_name,
               row.names = FALSE, col.names = FALSE, quote = FALSE
   )
   mplus_files <- sprintf(
     c("sim_dat_%s.dat", "lms_%s.inp", "lms_%s.out"),
-    condition$REPLICATION
+    replication_counter
   )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
+  writeLines(gsub("repid", replacement = replication_counter,
                   x = fixed_objects$lms_syntax),
              con = file.path(temp_session, mplus_files[[2]]))
   MplusAutomation::runModels(
@@ -286,21 +322,30 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
   
   # Extract results
   res_ust <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$unstandardized
+  ci_ust <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$ci.unstandardized
   res_std <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$std.standardized
+  ci_std <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$ci.std.standardized
   
   est_ust <- res_ust[res_ust$paramHeader == "Y.ON", "est"]
   se_ust <- res_ust[res_ust$paramHeader == "Y.ON", "se"]
+  ci_ll_ust <- ci_ust[ci_ust$paramHeader == "Y.ON", "low2.5"]
+  ci_ul_ust <- ci_ust[ci_ust$paramHeader == "Y.ON", "up2.5"]
   est_std <- res_std[res_std$paramHeader == "Y.ON", "est"]
   se_std <- res_std[res_std$paramHeader == "Y.ON", "se"]
-  p <- res_std[res_std$paramHeader == "Y.ON", "pval"]
+  ci_ll_std <- ci_std[ci_std$paramHeader == "Y.ON", "low2.5"]
+  ci_ul_std <- ci_std[ci_std$paramHeader == "Y.ON", "up2.5"]
   
   # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std, p)  
+  out <- c(est_ust, se_ust, ci_ll_ust, ci_ul_ust, 
+           est_std, se_std, ci_ll_std, ci_ul_std)  
   names(out) <- c("est_x_ust", "est_m_ust", "est_xm_ust",
                   "se_x_ust", "se_m_ust", "se_xm_ust", 
+                  "ci_ll_x_ust", "ci_ll_m_ust", "ci_ll_xm_ust",
+                  "ci_ul_x_ust", "ci_ul_m_ust", "ci_ul_xm_ust",
                   "est_x_std", "est_m_std", "est_xm_std",
                   "se_x_std", "se_m_std", "se_xm_std", 
-                  "pval_x", "pval_m", "pval_xm")
+                  "ci_ll_x_std", "ci_ll_m_std", "ci_ll_xm_std",
+                  "ci_ul_x_std", "ci_ul_m_std", "ci_ul_xm_std")
   
   # Remove temp files
   file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
@@ -368,43 +413,21 @@ outlier_se <- function(se) {
 }
 
 # Helper function for calculating coverage rate, Type I error rate, and power
-ci_stats <- function(est, se, par, stats_type, lrt_lo = NULL, lrt_up = NULL) {
-
-  # Calculate the confidence intervals (usd)
-  lo_95 <- est - qnorm(.975) * se
-  up_95 <- est + qnorm(.975) * se
-  ci_est <- vector("list", length = ncol(est))
-  names(ci_est) <- colnames(est)
+ci_stats <- function(est, se, par, stats_type, ci_ll_std, ci_ul_std) {
   
-  # Construct confidence intervals for each method
-  for (i in seq_len(ncol(est))) {
-    ci_est[[i]] <- cbind(lo_95[,i], up_95[,i])
-  }
+  ci_std <- cbind(ci_ll_std, ci_ul_std)
   
-  # Extract LRT CIs
-  if (!is.null(lrt_lo) && !is.null(lrt_up)) {
-    ci_lrt <- vector("list", length = ncol(est))
-    names(ci_lrt) <- colnames(est)
-    
-    for (i in seq_len(ncol(est))) {
-      ci_lrt[[i]] <- cbind(lrt_lo[,i], lrt_up[,i])
-    }
-  }
-  
-  # Determine which statistic to calculate
-  if (stats_type == "Coverage") {
-    return(sapply(ci_est, function(ci) mean(ci[,1] <= par & ci[,2] >= par)))
-  } else if (stats_type == "TypeI") {
-    return(sapply(ci_est, function(ci) mean(ci[,1] > 0 | ci[,2] < 0)))
-  } else if (stats_type == "Lrt_TypeI") {
-    return(sapply(ci_lrt, function(ci) mean(ci[,1] > 0 | ci[,2] < 0)))
-  } else if (stats_type == "Power") {
-    return(sapply(ci_est, function(ci) (1 - mean(ci[,1] < 0 & ci[,2] > 0))))
-  } else if (stats_type == "Lrt_Power") {
-    return(sapply(ci_lrt, function(ci) (1 - mean(ci[,1] < 0 & ci[,2] > 0))))
-  } else {
+  valid_types <- c("Coverage", "TypeI", "Power")
+  if (!stats_type %in% valid_types) {
     stop("Invalid stats_type specified. Please choose from 'Coverage', 'TypeI', or 'Power'.")
   }
+
+  stats_func <- switch(stats_type,
+                       "Coverage" = function(ci) mean(ci[,1] <= par & ci[,2] >= par),
+                       "TypeI"    = function(ci) mean(ci[,1] > 0 | ci[,2] < 0),
+                       "Power"    = function(ci) 1 - mean(ci[,1] < 0 & ci[,2] > 0))
+  
+  return(stats_func(ci_std))
 }
 
 # Helper function for warning sum
@@ -414,18 +437,19 @@ warning_sum <- function(count) {
 
 # Evaluation Function
 evaluate_res <- function (condition, results, fixed_objects = NULL) {
-
+  
   # Population parameter
   pop_par <- condition$gamma_xm
-
+  
   # Parameter estimates
-  est_std <- results[, grep(".est$", colnames(results))]
-  est_usd <- results[, grep(".est_usd$", colnames(results))]
-  se_std <- results[, grep(".se_std$", colnames(results))]
-  se_usd <- results[, grep(".se_usd$", colnames(results))]
-  lrtp_lower <- results[, grep(".lrtp_lower$", colnames(results))]
-  lrtp_upper <- results[, grep(".lrtp_upper$", colnames(results))]
-  warnings <- results[, grep(".warnings_count$", colnames(results))]
+  est_std <- results[, grep("est_xm_std", colnames(results)), drop = FALSE]
+  est_ust <- results[, grep("est_xm_ust", colnames(results)), drop = FALSE]
+  se_std <- results[, grep("se_xm_std", colnames(results)), drop = FALSE]
+  se_ust <- results[, grep("se_xm_ust", colnames(results)), drop = FALSE]
+  ci_ll_std <- results[, grep("ci_ll_xm_std", colnames(results)), drop = FALSE]
+  ci_ul_std <- results[, grep("ci_ul_xm_std", colnames(results)), drop = FALSE]
+  ci_ll_ust <- results[, grep("ci_ll_xm_ust", colnames(results)), drop = FALSE]
+  ci_ul_ust <- results[, grep("ci_ul_xm_ust", colnames(results)), drop = FALSE]
 
   c(raw_bias = robust_bias(est_std,
                            se_std,
@@ -455,62 +479,38 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
                              trim = 0.2,
                              type = "trim"),
     outlier_se = outlier_se(se_std),
-    coverage_usd = ci_stats(est_usd, 
-                        se_usd,
-                        pop_par, 
-                        "Coverage"),
-    coverage_std = ci_stats(est_std, 
-                            se_std,
-                            pop_par, 
-                            "Coverage"),
-    type1_usd = ci_stats(est_usd, 
-                         se_usd,
-                         pop_par, 
-                         "TypeI"),
-    type1_std = ci_stats(est_std, 
-                         se_std,
-                         pop_par, 
-                         "TypeI"),
-    type1_lrt = ci_stats(est_usd, 
-                         se_usd,
-                         pop_par, 
-                         "Lrt_TypeI",
-                         lrt_lo = lrtp_lower,
-                         lrt_up = lrtp_upper),
-    power_usd = ci_stats(est_usd, 
-                         se_usd,
-                         pop_par, 
-                         "Power"),
-    power_std = ci_stats(est_std, 
-                         se_std,
-                         pop_par, 
-                         "Power"),
-    power_lrt = ci_stats(est_usd, 
-                         se_usd,
-                         pop_par, 
-                         "Lrt_Power",
-                         lrt_lo = lrtp_lower,
-                         lrt_up = lrtp_upper),
+    coverage = ci_stats(est_std, se_std, pop_par,
+                        "Coverage",
+                        ci_ll_std, ci_ul_std),
+    type1_std = ci_stats(est_std, se_std, pop_par,
+                         "TypeI",
+                         ci_ll_std, ci_ul_std),
+    power_std = ci_stats(est_std, se_std, pop_par,
+                          "Power",
+                         ci_ll_std, ci_ul_std),
     rmse = RMSE(na.omit(est_std),
-                parameter = pop_par),
-    warning_total = warning_sum(warnings)
+                parameter = pop_par)
+    # warning_total = warning_sum(warnings)
   )
 }
 
 # ========================================= Run Experiment ========================================= #
-res <- runSimulation(design = DESIGNFACTOR,
-              replications = 2000,
+# Initialize a counter
+if (!exists("replication_counter")) {
+  replication_counter <- 1
+}
+
+runSimulation(design = DESIGNFACTOR[1,],
+              replications = 3,
               generate = generate_dat,
-              analyse = list(mmr = analyze_mmr,
-                             upi = analyze_upi,
-                             rapi = analyze_rapi,
-                             tspa = analyze_tspa),
+              analyse = list(tspa = analyze_2spa,
+                             lms = analyze_lms),
               summarise = evaluate_res,
-              fixed_objects = FIXED_PARAMETER,
-              seed = rep(61543, nrow(DESIGNFACTOR)),
+              fixed_objects = FIXED,
+              seed = rep(61543, nrow(DESIGNFACTOR[1,])),
               packages = "lavaan", 
-              filename = "continuous_boundMLR_09252024",
+              filename = "trial",
               parallel = TRUE,
-              ncores = 30,
+              ncores = 8,
               save = TRUE,
               save_results = TRUE)
