@@ -1,0 +1,320 @@
+Mplus VERSION 8.10 (Linux)
+MUTHEN & MUTHEN
+03/29/2024   2:40 PM
+
+INPUT INSTRUCTIONS
+
+  TITLE:	2S-PA-Int with product indicators with EAP scores;
+  DATA:	FILE = latent_inter.dat;
+  VARIABLE:
+          NAMES = fsy rel_fsy ev_fsy fsx se_fsx fsm se_fsm;
+          USEVARIABLES = fsy fsx fsm fsxm;
+          CONSTRAINT = se_fsx se_fsm ld_fsxm ev_fsxm;
+  DEFINE: fsxm = fsx * fsm; ! product indicator
+          ld_fsxm = (1 - se_fsx^2) * (1 - se_fsm^2); ! product of loadings
+          ! ldfsx^2 * evfsm + ldfsm^2 * evfsx + evfsx * evfsm;
+          ev_fsxm = (1 - se_fsx^2)^2 * se_fsm^2 * (1 - se_fsm^2) +
+                    (1 - se_fsm^2)^2 * se_fsx^2 * (1 - se_fsx^2) +
+                    se_fsx^2 * (1 - se_fsx^2) * se_fsm^2 * (1 - se_fsm^2);
+  ANALYSIS:
+  MODEL:  !outcome
+          FY BY fsy*1 (ldfsy);
+          FY*1;
+          fsy* (evfsy);
+
+          !moderator
+          FM BY fsm*1 (ldfsm);
+          FM*1;
+          fsm* (evfsm);
+
+          !focal variable
+          FX BY fsx*1 (ldfsx);
+          FX*1;
+          fsx* (evfsx);
+
+          !product indicator
+          FXM BY fsxm*1 (ldfsxm);
+          FXM*1;
+          fsxm* (evfsxm);
+
+          !interaction model
+          FY ON FX FM FXM;
+  MODEL CONSTRAINT:
+          ldfsy = (1 - 0.399935^2);
+          evfsy = 0.399935^2 * (1 - 0.399935^2);  ! 0.399935 = SE for regression factor scor
+          ldfsm = 1 - se_fsm^2;
+          evfsm = se_fsm^2 * (1 - se_fsm^2);
+          ldfsx = 1 - se_fsx^2;
+          evfsx = se_fsx^2 * (1 - se_fsx^2);
+          ldfsxm = ld_fsxm;
+          evfsxm = ev_fsxm;
+  OUTPUT: TECH1 TECH8;
+
+
+
+*** WARNING
+  Input line exceeded 90 characters. Some input may be truncated.
+          evfsy = 0.399935^2 * (1 - 0.399935^2);  ! 0.399935 = SE for regression factor score
+*** WARNING in OUTPUT command
+  TECH8 option is available only with analysis types MIXTURE, RANDOM, or
+  TWOLEVEL with estimators ML, MLF, or MLR or ALGORITHM=INTEGRATION.
+  Request for TECH8 is ignored.
+   2 WARNING(S) FOUND IN THE INPUT INSTRUCTIONS
+
+
+
+2S-PA-Int with product indicators with EAP scores;
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                        5000
+
+Number of dependent variables                                    4
+Number of independent variables                                  0
+Number of continuous latent variables                            4
+
+Observed dependent variables
+
+  Continuous
+   FSY         FSX         FSM         FSXM
+
+Continuous latent variables
+   FY          FM          FX          FXM
+
+
+Estimator                                                       ML
+Information matrix                                        OBSERVED
+Maximum number of iterations                                  1000
+Convergence criterion                                    0.500D-04
+Maximum number of steepest descent iterations                   20
+
+Input data file(s)
+  latent_inter.dat
+
+Input data format  FREE
+
+
+
+UNIVARIATE SAMPLE STATISTICS
+
+
+     UNIVARIATE HIGHER-ORDER MOMENT DESCRIPTIVE STATISTICS
+
+         Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
+        Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
+
+     FSY                   0.000      -0.371      -4.013    0.02%      -0.716     -0.185      0.042
+            5000.000       0.840       0.706       3.582    0.02%       0.250      0.750
+     FSX                   0.000       0.227      -1.345   11.06%      -1.067     -0.298     -0.014
+            5000.000       0.771      -0.617       2.198    1.22%       0.163      0.746
+     FSM                   0.000      -0.063      -1.954    3.16%      -0.784     -0.226      0.007
+            5000.000       0.793      -0.485       1.783    4.46%       0.248      0.777
+     FSXM                  0.274       0.943      -3.442    0.02%      -0.195      0.006      0.081
+            5000.000       0.624       2.660       3.919    0.22%       0.223      0.749
+     SE_FSX                0.473       1.164       0.408    0.10%       0.419      0.435      0.443
+            5000.000       0.005      -0.020       0.625   11.06%       0.455      0.562
+     SE_FSM                0.452       1.031       0.353    0.02%       0.409      0.433      0.440
+            5000.000       0.002       0.649       0.585    4.46%       0.451      0.491
+     LD_FSXM               0.612      -0.851       0.401    0.10%       0.547      0.615      0.632
+            5000.000       0.004      -0.177       0.729    0.02%       0.646      0.668
+     EV_FSXM               0.233      -0.126       0.198    0.02%       0.222      0.229      0.233
+            5000.000       0.000      -1.090       0.250    0.04%       0.237      0.247
+
+
+THE MODEL ESTIMATION TERMINATED NORMALLY
+
+
+
+MODEL FIT INFORMATION
+
+Number of Free Parameters                       14
+
+Loglikelihood
+
+          H0 Value                      -25226.412
+
+Information Criteria
+
+          Akaike (AIC)                   50480.824
+          Bayesian (BIC)                 50572.065
+          Sample-Size Adjusted BIC       50527.577
+            (n* = (n + 2) / 24)
+
+
+
+MODEL RESULTS
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ FY       BY
+    FSY                0.840      0.000    999.000    999.000
+
+ FM       BY
+    FSM              999.000      0.000    999.000    999.000
+
+ FX       BY
+    FSX              999.000      0.000    999.000    999.000
+
+ FXM      BY
+    FSXM             999.000      0.000    999.000    999.000
+
+ FY       ON
+    FX                 0.240      0.019     12.702      0.000
+    FM                 0.280      0.019     15.155      0.000
+    FXM               -0.450      0.019    -24.265      0.000
+
+ FX       WITH
+    FM                 0.444      0.019     22.830      0.000
+
+ FXM      WITH
+    FM                -0.023      0.022     -1.043      0.297
+    FX                 0.075      0.023      3.324      0.001
+
+ Intercepts
+    FSY               -0.027      0.013     -2.047      0.041
+    FSX               -0.058      0.012     -4.672      0.000
+    FSM               -0.006      0.013     -0.445      0.657
+    FSXM               0.309      0.011     27.465      0.000
+
+ Variances
+    FM                 1.001      0.027     37.262      0.000
+    FX                 1.008      0.028     36.418      0.000
+    FXM                1.062      0.039     27.199      0.000
+
+ Residual Variances
+    FSY                0.134      0.000    999.000    999.000
+    FSX              999.000      0.000    999.000    999.000
+    FSM              999.000      0.000    999.000    999.000
+    FSXM             999.000      0.000    999.000    999.000
+    FY                 0.600      0.019     31.205      0.000
+
+
+QUALITY OF NUMERICAL RESULTS
+
+     Condition Number for the Information Matrix              0.795E-04
+       (ratio of smallest to largest eigenvalue)
+
+
+TECHNICAL 1 OUTPUT
+
+
+     PARAMETER SPECIFICATION
+
+
+           NU
+              FSY           FSX           FSM           FSXM
+              ________      ________      ________      ________
+                  1             2             3             4
+
+
+           LAMBDA
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+ FSY                5             0             0             0
+ FSX                0             0             6             0
+ FSM                0             7             0             0
+ FSXM               0             0             0             8
+
+
+           THETA
+              FSY           FSX           FSM           FSXM
+              ________      ________      ________      ________
+ FSY                9
+ FSX                0            10
+ FSM                0             0            11
+ FSXM               0             0             0            12
+
+
+           ALPHA
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+                  0             0             0             0
+
+
+           BETA
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+ FY                 0            13            14            15
+ FM                 0             0             0             0
+ FX                 0             0             0             0
+ FXM                0             0             0             0
+
+
+           PSI
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+ FY                16
+ FM                 0            17
+ FX                 0            18            19
+ FXM                0            20            21            22
+
+
+     STARTING VALUES
+
+
+           NU
+              FSY           FSX           FSM           FSXM
+              ________      ________      ________      ________
+                0.000         0.000         0.000         0.274
+
+
+           LAMBDA
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+ FSY            1.000         0.000         0.000         0.000
+ FSX            0.000         0.000         1.000         0.000
+ FSM            0.000         1.000         0.000         0.000
+ FSXM           0.000         0.000         0.000         1.000
+
+
+           THETA
+              FSY           FSX           FSM           FSXM
+              ________      ________      ________      ________
+ FSY            0.420
+ FSX            0.000         0.386
+ FSM            0.000         0.000         0.397
+ FSXM           0.000         0.000         0.000         0.312
+
+
+           ALPHA
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+                0.000         0.000         0.000         0.000
+
+
+           BETA
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+ FY             0.000         0.000         0.000         0.000
+ FM             0.000         0.000         0.000         0.000
+ FX             0.000         0.000         0.000         0.000
+ FXM            0.000         0.000         0.000         0.000
+
+
+           PSI
+              FY            FM            FX            FXM
+              ________      ________      ________      ________
+ FY             1.000
+ FM             0.000         1.000
+ FX             0.000         0.000         1.000
+ FXM            0.000         0.000         0.000         1.000
+
+
+     Beginning Time:  14:40:04
+        Ending Time:  14:40:07
+       Elapsed Time:  00:00:03
+
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2023 Muthen & Muthen

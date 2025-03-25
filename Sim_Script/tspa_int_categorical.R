@@ -37,14 +37,32 @@ FIXED <- list(gamma_x = 0.3,
               )
 
 # Temporary directory
-FIXED$temp_session <- "/Users/jimmy_z/R Projects/2S-PA-Int-Cat/temp_folder"
+FIXED$temp_session <- tempdir()
+
+# UPI syntax
+FIXED$upi_syntax <- "
+  # Measurement Model
+    Y =~ y1 + y2 + y3
+    X =~ x1 + x2 + x3
+    M =~ m1 + m2 + m3 + m4 + m5 + m6 + 
+         m7 + m8 + m9 + m10 + m11 + m12 
+  # Structural Model
+    Y ~ b1*X + b2*M + b3*X:M
+  # Define Standardized Coefficients
+    X ~~ v1*X
+    M ~~ v2*M
+  # Standardized coefficients
+    stdx_b1 := b1*sqrt(v1)
+    stdx_b2 := b2*sqrt(v2)
+    stdx_b3 := b3*sqrt(v1)*sqrt(v2)
+"
 
 # LMS syntax
 FIXED$lms_syntax <- "
 TITLE: Latent Moderated Structural (LMS) Model
 
 DATA:
-  FILE = sim_dat_repid.dat;  
+  FILE = lms_simdat_repid.dat;  
   FORMAT IS FREE;              
 
 VARIABLE:
@@ -66,7 +84,7 @@ ANALYSIS:
 
 MODEL:
   X BY x1* x2* x3*;   
-  M BY m1* m2* m3*;   
+  M BY m1* m2* m3* m4* m5* m6* m7* m8* m9* m10* m11* m12*;   
   Y BY y1* y2* y3*;   
   XM | X XWITH M;  
 
@@ -82,6 +100,136 @@ OUTPUT:
   
 SAVEDATA:
   RESULTS = lms_results_repid.dat;
+"
+
+# 2S-PA Syntax
+FIXED$tspa_syntax <- "
+TITLE: Two-Stage Path Analysis
+
+DATA:
+  FILE = 2spa_simdat_repid.dat;  
+  FORMAT IS FREE;              
+
+VARIABLE:
+  NAMES = fs_y rel_fs_y ev_fs_y
+          fs_x se_fs_x fs_m se_fs_m
+          ev_fs_m ev_fs_x rel_fs_m rel_fs_x 
+          ev_fs_xm ld_fs_xm fs_xm;
+  USEVARIABLES = fs_y fs_x fs_m fs_xm;
+  CONSTRAINT = rel_fs_y rel_fs_m rel_fs_x ld_fs_xm
+               ev_fs_y ev_fs_m ev_fs_x ev_fs_xm;
+        
+ANALYSIS:
+        
+MODEL:  !outcome
+          Y BY fs_y*1 (ld_fsy);
+          fs_y* (ev_fsy);
+          
+          !predictor
+          X BY fs_x*1 (ld_fsx);
+          X (var_X);
+          fs_x* (ev_fsx);
+
+          !moderator
+          M BY fs_m*1 (ld_fsm);
+          M (var_M);
+          fs_m* (ev_fsm);
+
+          !product indicator
+          XM BY fs_xm*1 (ld_fsxm);
+          fs_xm* (ev_fsxm);
+
+          !structural model
+          Y ON X(b1); 
+          Y ON M(b2);
+          Y ON XM(b3);
+          
+  MODEL CONSTRAINT:
+          ld_fsy = rel_fs_y;
+          ev_fsy = ev_fs_y;  
+          ld_fsx = rel_fs_x;
+          ev_fsx = ev_fs_x;
+          ld_fsm = rel_fs_m;
+          ev_fsm = ev_fs_m;
+          ld_fsxm = ld_fs_xm;
+          ev_fsxm = ev_fs_xm;
+          
+          New(stdx_b1);
+          stdx_b1 = b1*sqrt(var_X);
+          New(stdx_b2);
+          stdx_b2 = b2*sqrt(var_M);
+          New(stdx_b3);
+          stdx_b3 = b3*sqrt(var_X)*sqrt(var_M);
+
+OUTPUT:
+  sampstat tech1 CINTERVAL;  
+  
+SAVEDATA:
+  RESULTS = 2spa_results_repid.dat;
+"
+
+# LMS with factor scores
+FIXED$lmsfs_syntax <- "
+TITLE: LMS using factor scores
+
+DATA:
+  FILE = lmsfs_simdat_repid.dat;
+  FORMAT IS FREE;              
+
+VARIABLE:
+  NAMES = fs_y rel_fs_y ev_fs_y
+          fs_x se_fs_x fs_m se_fs_m
+          ev_fs_m ev_fs_x rel_fs_m rel_fs_x 
+          ev_fs_xm ld_fs_xm fs_xm; 
+  USEVARIABLES = fs_y fs_x fs_m;  
+  CONSTRAINT = rel_fs_y rel_fs_m rel_fs_x 
+               ev_fs_y ev_fs_m ev_fs_x;
+
+ANALYSIS:
+        TYPE = RANDOM;
+        ALGORITHM = INTEGRATION;
+MODEL:  !outcome
+          Y BY fs_y*1 (ld_fsy);
+          fs_y* (ev_fsy);
+          
+          !predictor
+          X BY fs_x*1 (ld_fsx);
+          X (var_X);
+          fs_x* (ev_fsx);
+
+          !moderator
+          M BY fs_m*1 (ld_fsm);
+          M (var_M);
+          fs_m* (ev_fsm);
+
+          !interaction model
+          XM | X XWITH M;
+          
+          !structural model
+          Y ON X(b1); 
+          Y ON M(b2);
+          Y ON XM(b3);
+          
+  MODEL CONSTRAINT:
+          ld_fsy = rel_fs_y;
+          ev_fsy = ev_fs_y; 
+          ld_fsx = rel_fs_x;
+          ev_fsx = ev_fs_x;
+          ld_fsm = rel_fs_m;
+          ev_fsm = ev_fs_m;
+          
+          New(stdx_b1);
+          stdx_b1 = b1*sqrt(var_X);
+          New(stdx_b2);
+          stdx_b2 = b2*sqrt(var_M);
+          New(stdx_b3);
+          stdx_b3 = b3*sqrt(var_X)*sqrt(var_M);
+
+OUTPUT:
+  sampstat tech1 CINTERVAL;  
+  
+SAVEDATA:
+  RESULTS = lmsfs_results_repid.dat;
 "
 
 # ========================================= Data Generation ========================================= #
@@ -151,19 +299,19 @@ generate_dat <- function(condition, fixed_objects = NULL) {
                                              nrow = N, ncol = length(lambda_m))
   
   # Check if simulated continuous items are correctly parameterized
-  test_df <- cbind(x_lat, m_lat, Y)
-  colnames(test_df) <- c("x1", "x2", "x3",
-                         "m1", "m2", "m3", "m4", "m5", "m6",
-                         "m7", "m8", "m9", "m10", "m11", "m12",
-                         "y1", "y2", "y3"
-                         )
-  mod <- "X =~ x1 + x2 + x3
-          M =~ m1 + m2 + m3 + m4 + m5 + m6 +
-              m7 + m8 + m9 + m10 + m11 + m12
-          Y =~ y1 + y2 + y3
-          Y ~ X + M"
-  summary(sem(mod, test_df, std.lv = TRUE),
-          standardized = TRUE)
+  # test_df <- cbind(x_lat, m_lat, Y)
+  # colnames(test_df) <- c("x1", "x2", "x3",
+  #                        "m1", "m2", "m3", "m4", "m5", "m6",
+  #                        "m7", "m8", "m9", "m10", "m11", "m12",
+  #                        "y1", "y2", "y3"
+  #                        )
+  # mod <- "X =~ x1 + x2 + x3
+  #         M =~ m1 + m2 + m3 + m4 + m5 + m6 +
+  #             m7 + m8 + m9 + m10 + m11 + m12
+  #         Y =~ y1 + y2 + y3
+  #         Y ~ X + M"
+  # summary(sem(mod, test_df, std.lv = TRUE),
+  #         standardized = TRUE)
   
   # Generate measurement indicators (observed)
   #' Obtain categorical items
@@ -196,19 +344,22 @@ generate_dat <- function(condition, fixed_objects = NULL) {
 # hist(test_dat$x1)
 # hist(test_dat$m1)
 
-# ========================================= Data Analysis ========================================= #
-
-analyze_2spa <- function (condition, dat, fixed_objects = NULL) {
-
+generate_fsdat <- function (dat) {
   # Prepare factor scores
   fs_y <- get_fs(dat[c(paste0("y", 1:3))], std.lv = TRUE) # continuous indicators
-  irt_x <- mirt(dat[c(paste0("x", 1:3))], 
+  
+  irt_x <- mirt(dat[c(paste0("x", 1:3))], # IRT (2-PL) for binary items
                 itemtype = "2PL",
-                verbose = FALSE)  # IRT (2-PL) for binary items
+                verbose = FALSE,
+                technical = list(NCYCLES = 1e4)) # Increase iteration number
+  if (!irt_x@OptimInfo$converged) stop('No convergence for MIRT') # Check for convergence
   fs_x <- fscores(irt_x, full.scores.SE = TRUE) # EAP scores
-  irt_m <- mirt(dat[c(paste0("m", 1:12))], 
+  
+  irt_m <- mirt(dat[c(paste0("m", 1:12))], # GRM for items with multiple categories
                 itemtype = "graded",
-                verbose = FALSE)  # GRM for items with multiple categories
+                verbose = FALSE,
+                technical = list(NCYCLES = 1e4)) # # Increase iteration number
+  if (!irt_m@OptimInfo$converged) stop('No convergence for MIRT') # Check for convergence
   fs_m <- fscores(irt_m, full.scores.SE = TRUE) # EAP scores
   
   # Prepare fs_dat
@@ -217,7 +368,10 @@ analyze_2spa <- function (condition, dat, fixed_objects = NULL) {
       "fs_y", "rel_fs_y", "ev_fs_y",
       "fs_x", "se_fs_x", "fs_m", "se_fs_m"
     )) |>
-    # Compute reliability; only needed for 2S-PA
+    mutate(
+      fs_x = fs_x - mean(fs_x, na.rm = TRUE),  # Mean-centered fs_x
+      fs_m = fs_m - mean(fs_m, na.rm = TRUE),  # Mean-centered fs_m
+    ) |>
     within(expr = {
       rel_fs_x <- 1 - se_fs_x^2 # reliability
       rel_fs_m <- 1 - se_fs_m^2
@@ -226,74 +380,159 @@ analyze_2spa <- function (condition, dat, fixed_objects = NULL) {
     }) |>
     # Add interaction
     within(expr = {
-      fs_xm <- fs_x * fs_m
+      # Double Mean-centered interaction
+      fs_xm <- fs_x * fs_m - mean(fs_x * fs_m)
       ld_fs_xm <- rel_fs_x * rel_fs_m
       ev_fs_xm <- rel_fs_x^2 * ev_fs_m + rel_fs_m^2 * ev_fs_x + ev_fs_m * ev_fs_x # formula
     })
   
-  # OpenMX model
-  tspa_umx <- umxLav2RAM(
-    "
-      fs_y ~ b1 * fs_x + b2 * fs_m + b3 * fs_xm
-      fs_y + fs_x + fs_m + fs_xm ~ 1
-      fs_x ~~ vx * fs_x + fs_m + fs_xm
-      fs_m ~~ vm * fs_m + fs_xm
-    ",
-    printTab = FALSE)
-    # Loading
-    matL <- mxMatrix(
-      type = "Diag", nrow = 4, ncol = 4,
-      free = FALSE,
-      labels = c("data.rel_fs_y", "data.rel_fs_x", "data.rel_fs_m", "data.ld_fs_xm"),
-      name = "L"
-    )
-    # Error
-    matE <- mxMatrix(
-      type = "Diag", nrow = 4, ncol = 4,
-      free = FALSE,
-      labels = c("data.ev_fs_y", "data.ev_fs_x", "data.ev_fs_m", "data.ev_fs_xm"),
-      name = "E"
-    )
-    
-  # Run the OpenMX model
-  tspa_mx <-
-      tspa_mx_model(
-        mxModel(tspa_umx,
-                mxAlgebra(b1 * sqrt(vx), name = "stdx_b1"),
-                mxAlgebra(b2 * sqrt(vm), name = "stdx_b2"),
-                mxAlgebra(b3 * sqrt(vx) * sqrt(vm), name = "stdx_b3"),
-                mxCI(c("b1", "b2", "b3", "stdx_b1", "stdx_b2", "stdx_b3"))),
-        data = fs_dat,
-        mat_ld = matL, 
-        mat_ev = matE)
-  tspa_mx_fit <- mxRun(tspa_mx, intervals = TRUE)
+  return(fs_dat)
+}
 
-  # Extract Parameters
-  est_ust <- tspa_mx_fit$output$estimate[c("b1", "b2", "b3")]
-  se_ust <- tspa_mx_fit$output$standardErrors[c("b1", "b2", "b3"), ]
-  est_std <- c(tspa_mx_fit$output$algebras$m1.stdx_b1,
-               tspa_mx_fit$output$algebras$m1.stdx_b2,
-               tspa_mx_fit$output$algebras$m1.stdx_b3)
-  se_std <- c(mxSE(m1.stdx_b1, model = tspa_mx_fit),
-              mxSE(m1.stdx_b2, model = tspa_mx_fit),
-              mxSE(m1.stdx_b3, model = tspa_mx_fit))
-  ci <- tspa_mx_fit$output$confidenceIntervals
-  ci_ll_ust <- ci[c("b1", "b2", "b3"), "lbound"]
-  ci_ul_ust <- ci[c("b1", "b2", "b3"), "ubound"]
-  ci_ll_std <- ci[c("m1.stdx_b1[1,1]", "m1.stdx_b2[1,1]", "m1.stdx_b3[1,1]"), "lbound"]
-  ci_ul_std <- ci[c("m1.stdx_b1[1,1]", "m1.stdx_b2[1,1]", "m1.stdx_b3[1,1]"), "ubound"]
+# ========================================= Data Analysis ========================================= #
+
+# analyze_2spa <- function (condition, dat, fixed_objects = NULL) {
+#   
+#   # Prepare fs_dat
+#   fs_dat <- generate_fsdat(dat)
+#   
+#   # OpenMX model
+#   tspa_umx <- umxLav2RAM(
+#     "
+#       fs_y ~ b1 * fs_x + b2 * fs_m + b3 * fs_xm
+#       fs_y + fs_x + fs_m + fs_xm ~ 1
+#       fs_x ~~ vx * fs_x + fs_m + fs_xm
+#       fs_m ~~ vm * fs_m + fs_xm
+#     ",
+#     printTab = FALSE)
+#     # Loading
+#     matL <- mxMatrix(
+#       type = "Diag", nrow = 4, ncol = 4,
+#       free = FALSE,
+#       labels = c("data.rel_fs_y", "data.rel_fs_x", "data.rel_fs_m", "data.ld_fs_xm"),
+#       name = "L"
+#     )
+#     # Error
+#     matE <- mxMatrix(
+#       type = "Diag", nrow = 4, ncol = 4,
+#       free = FALSE,
+#       labels = c("data.ev_fs_y", "data.ev_fs_x", "data.ev_fs_m", "data.ev_fs_xm"),
+#       name = "E"
+#     )
+#     
+#   # Run the OpenMX model
+#   tspa_mx <-
+#       tspa_mx_model(
+#         mxModel(tspa_umx,
+#                 mxAlgebra(b1 * sqrt(vx), name = "stdx_b1"),
+#                 mxAlgebra(b2 * sqrt(vm), name = "stdx_b2"),
+#                 mxAlgebra(b3 * sqrt(vx) * sqrt(vm), name = "stdx_b3"),
+#                 mxCI(c("b1", "b2", "b3", "stdx_b1", "stdx_b2", "stdx_b3"))),
+#         data = fs_dat,
+#         mat_ld = matL, 
+#         mat_ev = matE)
+#   tspa_mx_fit <- mxRun(tspa_mx, intervals = TRUE)
+# 
+#   # Extract Parameters
+#   est_ust <- tspa_mx_fit$output$estimate[c("b1", "b2", "b3")]
+#   se_ust <- tspa_mx_fit$output$standardErrors[c("b1", "b2", "b3"), ]
+#   est_std <- c(tspa_mx_fit$output$algebras$m1.stdx_b1,
+#                tspa_mx_fit$output$algebras$m1.stdx_b2,
+#                tspa_mx_fit$output$algebras$m1.stdx_b3)
+#   se_std <- c(mxSE(m1.stdx_b1, model = tspa_mx_fit),
+#               mxSE(m1.stdx_b2, model = tspa_mx_fit),
+#               mxSE(m1.stdx_b3, model = tspa_mx_fit))
+#   
+#   # Create the output vector
+#   out <- c(est_ust, se_ust, est_std, se_std)  
+#   names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+#                   "x_se_ust", "m_se_ust", "xm_se_ust", 
+#                   "x_est_std", "m_est_std", "xm_est_std",
+#                   "x_se_std", "m_se_std", "xm_se_std")
+#   
+#   # Return
+#   return(out)
+# }
+
+analyze_upi <- function (condition, dat, fixed_objects = NULL) {
+  
+  fit_upi <- upi(model = fixed_objects$upi_syntax, 
+                 data = dat, 
+                 mode = "all",
+                 ordered = c("x1", "x2", "x3", "m1", "m2", "m3",
+                             "m4", "m5", "m6", "m7", "m8", "m9",
+                             "m10", "m11", "m12")) 
+  param_upi <- parameterEstimates(fit_upi)
+  
+  # Extract parameters
+  est_ust <- param_upi %>% 
+    filter(label %in% c("b1", "b2", "b3")) %>% 
+    pull(est)
+  se_ust <- param_upi %>% 
+    filter(label %in% c("b1", "b2", "b3")) %>% 
+    pull(se)
+  est_std <- param_upi %>% 
+    filter(label %in% c("stdx_b1", "stdx_b2", "stdx_b3")) %>% 
+    pull(est)
+  se_std <- param_upi %>% 
+    filter(label %in% c("stdx_b1", "stdx_b2", "stdx_b3")) %>% 
+    pull(se)
   
   # Create the output vector
-  out <- c(est_ust, se_ust, ci_ll_ust, ci_ul_ust, 
-           est_std, se_std, ci_ll_std, ci_ul_std)  
-  names(out) <- c("est_x_ust", "est_m_ust", "est_xm_ust",
-                  "se_x_ust", "se_m_ust", "se_xm_ust", 
-                  "ci_ll_x_ust", "ci_ll_m_ust", "ci_ll_xm_ust",
-                  "ci_ul_x_ust", "ci_ul_m_ust", "ci_ul_xm_ust",
-                  "est_x_std", "est_m_std", "est_xm_std",
-                  "se_x_std", "se_m_std", "se_xm_std", 
-                  "ci_ll_x_std", "ci_ll_m_std", "ci_ll_xm_std",
-                  "ci_ul_x_std", "ci_ul_m_std", "ci_ul_xm_std")
+  out <- c(est_ust, se_ust, est_std, se_std)  
+  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                  "x_se_ust", "m_se_ust", "xm_se_ust", 
+                  "x_est_std", "m_est_std", "xm_est_std",
+                  "x_se_std", "m_se_std", "xm_se_std")
+  
+  # Return
+  return(out)
+}
+
+analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
+  
+  fs_dat <- generate_fsdat(dat)
+  
+  # Run Mplus model
+  temp_session <- fixed_objects$temp_session
+  dat_name <- file.path(temp_session,
+                        sprintf("2spa_simdat_%s.dat", condition$REPLICATION))
+  write.table(fs_dat,
+              file = dat_name,
+              row.names = FALSE, col.names = FALSE, quote = FALSE
+  )
+  mplus_files <- sprintf(
+    c("2spa_simdat_%s.dat", "2spa_%s.inp", "2spa_%s.out", "2spa_results_%s.dat"),
+    condition$REPLICATION
+  )
+  writeLines(gsub("repid", replacement = condition$REPLICATION,
+                  x = fixed_objects$tspa_syntax),
+             con = file.path(temp_session, mplus_files[[2]]))
+  MplusAutomation::runModels(
+    temp_session,
+    filefilter = mplus_files[[2]],
+    Mplus_command = "/Applications/Mplus/mplus")
+  
+  # Extract results
+  # Read lines
+  res_2spa <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  # readLines(file.path(temp_session, mplus_files[[3]]))
+  
+  # Extract Parameters
+  est_ust <- res_2spa[13:15]
+  se_ust <- res_2spa[38:40]
+  est_std <- res_2spa[23:25]
+  se_std <- res_2spa[48:50]
+  
+  # Create the output vector
+  out <- c(est_ust, se_ust, est_std, se_std)  
+  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                  "x_se_ust", "m_se_ust", "xm_se_ust", 
+                  "x_est_std", "m_est_std", "xm_est_std",
+                  "x_se_std", "m_se_std", "xm_se_std")
+  
+  # Remove temp files
+  file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
   
   # Return
   return(out)
@@ -303,16 +542,16 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
 
   temp_session <- fixed_objects$temp_session
   dat_name <- file.path(temp_session,
-                        sprintf("sim_dat_%s.dat", replication_counter))
+                        sprintf("lms_simdat_%s.dat", condition$REPLICATION))
   write.table(dat,
               file = dat_name,
               row.names = FALSE, col.names = FALSE, quote = FALSE
   )
   mplus_files <- sprintf(
-    c("sim_dat_%s.dat", "lms_%s.inp", "lms_%s.out"),
-    replication_counter
+    c("lms_simdat_%s.dat", "lms_%s.inp", "lms_%s.out", "lms_results_%s.dat"),
+    condition$REPLICATION
   )
-  writeLines(gsub("repid", replacement = replication_counter,
+  writeLines(gsub("repid", replacement = condition$REPLICATION,
                   x = fixed_objects$lms_syntax),
              con = file.path(temp_session, mplus_files[[2]]))
   MplusAutomation::runModels(
@@ -321,31 +560,68 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
     Mplus_command = "/Applications/Mplus/mplus")
   
   # Extract results
-  res_ust <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$unstandardized
-  ci_ust <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$ci.unstandardized
-  res_std <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$std.standardized
-  ci_std <- readModels(file.path(temp_session, mplus_files[[3]]), what="parameters")$parameters$ci.std.standardized
+  # Read lines
+  res_lms <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  # readLines(file.path(temp_session, mplus_files[[3]]))
   
-  est_ust <- res_ust[res_ust$paramHeader == "Y.ON", "est"]
-  se_ust <- res_ust[res_ust$paramHeader == "Y.ON", "se"]
-  ci_ll_ust <- ci_ust[ci_ust$paramHeader == "Y.ON", "low2.5"]
-  ci_ul_ust <- ci_ust[ci_ust$paramHeader == "Y.ON", "up2.5"]
-  est_std <- res_std[res_std$paramHeader == "Y.ON", "est"]
-  se_std <- res_std[res_std$paramHeader == "Y.ON", "se"]
-  ci_ll_std <- ci_std[ci_std$paramHeader == "Y.ON", "low2.5"]
-  ci_ul_std <- ci_std[ci_std$paramHeader == "Y.ON", "up2.5"]
+  est_ust <- res_lms[25:27]
+  se_ust <- res_lms[105:107]
+  est_std <- res_lms[185:187]
+  se_std <- res_lms[265:267]
   
   # Create the output vector
-  out <- c(est_ust, se_ust, ci_ll_ust, ci_ul_ust, 
-           est_std, se_std, ci_ll_std, ci_ul_std)  
-  names(out) <- c("est_x_ust", "est_m_ust", "est_xm_ust",
-                  "se_x_ust", "se_m_ust", "se_xm_ust", 
-                  "ci_ll_x_ust", "ci_ll_m_ust", "ci_ll_xm_ust",
-                  "ci_ul_x_ust", "ci_ul_m_ust", "ci_ul_xm_ust",
-                  "est_x_std", "est_m_std", "est_xm_std",
-                  "se_x_std", "se_m_std", "se_xm_std", 
-                  "ci_ll_x_std", "ci_ll_m_std", "ci_ll_xm_std",
-                  "ci_ul_x_std", "ci_ul_m_std", "ci_ul_xm_std")
+  out <- c(est_ust, se_ust, est_std, se_std)  
+  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                  "x_se_ust", "m_se_ust", "xm_se_ust", 
+                  "x_est_std", "m_est_std", "xm_est_std",
+                  "x_se_std", "m_se_std", "xm_se_std")
+  
+  # Remove temp files
+  file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
+  
+  # Return
+  return(out)
+}
+
+analyze_lmsfs <- function (condition, dat, fixed_objects = NULL) {
+  
+  fs_dat <- generate_fsdat(dat)
+  
+  temp_session <- fixed_objects$temp_session
+  dat_name <- file.path(temp_session,
+                        sprintf("lmsfs_simdat_%s.dat", condition$REPLICATION))
+  write.table(fs_dat,
+              file = dat_name,
+              row.names = FALSE, col.names = FALSE, quote = FALSE
+  )
+  mplus_files <- sprintf(
+    c("lmsfs_simdat_%s.dat", "lmsfs_%s.inp", "lmsfs_%s.out", "lmsfs_results_%s.dat"),
+    condition$REPLICATION
+  )
+  writeLines(gsub("repid", replacement = condition$REPLICATION,
+                  x = fixed_objects$lmsfs_syntax),
+             con = file.path(temp_session, mplus_files[[2]]))
+  MplusAutomation::runModels(
+    temp_session,
+    filefilter = mplus_files[[2]],
+    Mplus_command = "/Applications/Mplus/mplus")
+  
+  # Extract results
+  # Read lines
+  res_lmsfs <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  # readLines(file.path(temp_session, mplus_files[[3]]))
+  
+  est_ust <- res_lmsfs[10:12]
+  se_ust <- res_lmsfs[29:31]
+  est_std <- res_lmsfs[17:19]
+  se_std <- res_lmsfs[36:38]
+  
+  # Create the output vector
+  out <- c(est_ust, se_ust, est_std, se_std)  
+  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                  "x_se_ust", "m_se_ust", "xm_se_ust", 
+                  "x_est_std", "m_est_std", "xm_est_std",
+                  "x_se_std", "m_se_std", "xm_se_std")
   
   # Remove temp files
   file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
@@ -413,21 +689,29 @@ outlier_se <- function(se) {
 }
 
 # Helper function for calculating coverage rate, Type I error rate, and power
-ci_stats <- function(est, se, par, stats_type, ci_ll_std, ci_ul_std) {
+ci_stats <- function(est, se, par, stats_type) {
   
-  ci_std <- cbind(ci_ll_std, ci_ul_std)
+  # Calculate the confidence intervals (usd)
+  ll <- est - qnorm(.975) * se
+  ul <- est + qnorm(.975) * se
+  ci <- vector("list", length = ncol(est))
+  names(ci) <- colnames(est)
   
-  valid_types <- c("Coverage", "TypeI", "Power")
-  if (!stats_type %in% valid_types) {
-    stop("Invalid stats_type specified. Please choose from 'Coverage', 'TypeI', or 'Power'.")
+  # Construct confidence intervals for each method
+  for (i in seq_len(ncol(est))) {
+    ci[[i]] <- cbind(ll[,i], ul[,i])
   }
 
-  stats_func <- switch(stats_type,
-                       "Coverage" = function(ci) mean(ci[,1] <= par & ci[,2] >= par),
-                       "TypeI"    = function(ci) mean(ci[,1] > 0 | ci[,2] < 0),
-                       "Power"    = function(ci) 1 - mean(ci[,1] < 0 & ci[,2] > 0))
-  
-  return(stats_func(ci_std))
+  # Determine which statistic to calculate
+  if (stats_type == "Coverage") {
+    return(sapply(ci, function(ci) mean(ci[,1] <= par & ci[,2] >= par)))
+  } else if (stats_type == "TypeI") {
+    return(sapply(ci, function(ci) mean(ci[,1] > 0 | ci[,2] < 0)))
+  } else if (stats_type == "Power") {
+    return(sapply(ci, function(ci) (1 - mean(ci[,1] < 0 & ci[,2] > 0))))
+  } else {
+    stop("Invalid stats_type specified. Please choose from 'Coverage', 'TypeI', or 'Power'.")
+  }
 }
 
 # Helper function for warning sum
@@ -442,14 +726,10 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   pop_par <- condition$gamma_xm
   
   # Parameter estimates
-  est_std <- results[, grep("est_xm_std", colnames(results)), drop = FALSE]
-  est_ust <- results[, grep("est_xm_ust", colnames(results)), drop = FALSE]
-  se_std <- results[, grep("se_xm_std", colnames(results)), drop = FALSE]
-  se_ust <- results[, grep("se_xm_ust", colnames(results)), drop = FALSE]
-  ci_ll_std <- results[, grep("ci_ll_xm_std", colnames(results)), drop = FALSE]
-  ci_ul_std <- results[, grep("ci_ul_xm_std", colnames(results)), drop = FALSE]
-  ci_ll_ust <- results[, grep("ci_ll_xm_ust", colnames(results)), drop = FALSE]
-  ci_ul_ust <- results[, grep("ci_ul_xm_ust", colnames(results)), drop = FALSE]
+  est_std <- results[, grep("xm_est_std", colnames(results)), drop = FALSE]
+  est_ust <- results[, grep("xm_est_ust", colnames(results)), drop = FALSE]
+  se_std <- results[, grep("xm_se_std", colnames(results)), drop = FALSE]
+  se_ust <- results[, grep("xm_se_ust", colnames(results)), drop = FALSE]
 
   c(raw_bias = robust_bias(est_std,
                            se_std,
@@ -480,14 +760,11 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
                              type = "trim"),
     outlier_se = outlier_se(se_std),
     coverage = ci_stats(est_std, se_std, pop_par,
-                        "Coverage",
-                        ci_ll_std, ci_ul_std),
+                        "Coverage"),
     type1_std = ci_stats(est_std, se_std, pop_par,
-                         "TypeI",
-                         ci_ll_std, ci_ul_std),
+                         "TypeI"),
     power_std = ci_stats(est_std, se_std, pop_par,
-                          "Power",
-                         ci_ll_std, ci_ul_std),
+                          "Power"),
     rmse = RMSE(na.omit(est_std),
                 parameter = pop_par)
     # warning_total = warning_sum(warnings)
@@ -495,21 +772,35 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 }
 
 # ========================================= Run Experiment ========================================= #
-# Initialize a counter
-if (!exists("replication_counter")) {
-  replication_counter <- 1
-}
+# Trial
+# trial <- runSimulation(design = DESIGNFACTOR[1,],
+#               replications = 3,
+#               generate = generate_dat,
+#               analyse = list(upi = analyze_upi,
+#                              tspa = analyze_2spamplus,
+#                              lms = analyze_lms,
+#                              lmsfs = analyze_lmsfs),
+#               summarise = evaluate_res,
+#               fixed_objects = FIXED,
+#               seed = rep(61543, nrow(DESIGNFACTOR[1,])),
+#               control = list(include_reps = TRUE),
+#               packages = "lavaan",
+#               parallel = TRUE,
+#               ncores = 8)
 
-runSimulation(design = DESIGNFACTOR[1,],
-              replications = 3,
+runSimulation(design = DESIGNFACTOR,
+              replications = 2000,
               generate = generate_dat,
-              analyse = list(tspa = analyze_2spa,
-                             lms = analyze_lms),
+              analyse = list(upi = analyze_upi,
+                             tspa = analyze_2spamplus,
+                             lms = analyze_lms,
+                             lmsfs = analyze_lmsfs),
               summarise = evaluate_res,
               fixed_objects = FIXED,
-              seed = rep(61543, nrow(DESIGNFACTOR[1,])),
+              seed = rep(61543, nrow(DESIGNFACTOR)),
+              control = list(include_reps = TRUE),
               packages = "lavaan", 
-              filename = "trial",
+              filename = "categorical_03252025",
               parallel = TRUE,
               ncores = 8,
               save = TRUE,

@@ -1,9 +1,7 @@
-------Begin Mplus Model Run: 25Feb2025 01:10:50------
+------Begin Mplus Model Run: 08Mar2025 01:17:33------
 Run options:
 	Recursive (run models in subdirectories): FALSE
 	Show output on console: FALSE
 	Replace existing outfile: always
 ------
-Currently running model: lms_1.inp
-
-------End Mplus Model Run: 25Feb2025 01:10:52------
+Currently running model: lms_1682.inp
