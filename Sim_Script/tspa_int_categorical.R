@@ -511,7 +511,7 @@ analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
   MplusAutomation::runModels(
     temp_session,
     filefilter = mplus_files[[2]],
-    Mplus_command = "/Applications/Mplus/mplus")
+    Mplus_command = "/opt/mplus/8.7/mplus")
   
   # Extract results
   # Read lines
@@ -557,7 +557,7 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
   MplusAutomation::runModels(
     temp_session,
     filefilter = mplus_files[[2]],
-    Mplus_command = "/Applications/Mplus/mplus")
+    Mplus_command = "/opt/mplus/8.7/mplus")
   
   # Extract results
   # Read lines
@@ -604,7 +604,7 @@ analyze_lmsfs <- function (condition, dat, fixed_objects = NULL) {
   MplusAutomation::runModels(
     temp_session,
     filefilter = mplus_files[[2]],
-    Mplus_command = "/Applications/Mplus/mplus")
+    Mplus_command = "/opt/mplus/8.7/mplus")
   
   # Extract results
   # Read lines
@@ -786,7 +786,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 #               control = list(include_reps = TRUE),
 #               packages = "lavaan",
 #               parallel = TRUE,
-#               ncores = 8)
+#               ncores = 30)
 
 runSimulation(design = DESIGNFACTOR,
               replications = 2000,
@@ -802,6 +802,6 @@ runSimulation(design = DESIGNFACTOR,
               packages = "lavaan", 
               filename = "categorical_03252025",
               parallel = TRUE,
-              ncores = 8,
+              ncores = 30,
               save = TRUE,
               save_results = TRUE)
