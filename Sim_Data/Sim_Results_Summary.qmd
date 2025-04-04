@@ -1,0 +1,547 @@
+---
+title: "2SPA Interaction with Categorical Indicators"
+format: 
+  html:
+    toc: true
+    toc-title: "On this page"
+    toc-location: left
+editor: visual
+---
+
+```{r load packages}
+#| message: false
+#| warning: false
+#| include: false
+library(here)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(readr)
+library(ggplot2)
+library(rlang)
+```
+
+## Examine Distribution of Raw Data
+
+```{r}
+#| label: read raw data
+#| message: false
+#| warning: false
+# Raw Data
+rdf_dir <- here("Sim_Data", "categorical_03252025_raw")
+rdf_path <- list.files(path = rdf_dir, pattern = "results-row-.*\\.rds", full.names = TRUE)
+rdf_list <- lapply(rdf_path, function(file) {
+  data <- readRDS(file)
+  data[["results"]]  
+})
+rdf_con_list <- do.call(rbind, lapply(rdf_path, function(file) {
+  data <- readRDS(file)
+  data[["condition"]]  
+}))
+```
+
+```{r}
+#| label: extract est and se
+#| message: false
+#| warning: false
+#| include: false
+# Helper function
+extract_columns <- function(data, column_names, suffix) {
+  columns <- setNames(
+    lapply(column_names, function(name) {
+      col_name <- paste0(name, suffix)
+      if (col_name %in% names(data)) {
+        return(data[[col_name]])
+      } else {
+        warning(paste("Column", col_name, "not found in the data. Returning NA."))
+        return(rep(NA, nrow(data)))
+      }
+    }),
+    paste0(column_names, suffix)
+  )
+  data.frame(columns)
+}
+
+column_names <- c("upi", "tspa", "lms", "lmsfs")
+est_list <- lapply(rdf_list, 
+                   extract_columns, 
+                   column_names = column_names, 
+                   suffix = ".xm_est_std")
+se_list <- lapply(rdf_list, 
+                  extract_columns, 
+                  column_names = column_names, 
+                  suffix = ".xm_se_std")
+```
+
+### Condition 1: $\beta = 0$, $\textit{N}$ = 100, $\rho = 0.8$, Symmetric
+
+```{r conditional data, include=FALSE}
+est <- cbind(est_list[[1]])
+se <- cbind(se_list[[1]])
+```
+
+#### Density Plot of SE
+
+```{r}
+#| label: se dist
+#| echo: false
+#| message: false
+#| warning: false
+# Density Plot
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  emp_sd <- sd(est[[i]], na.rm = TRUE)
+  mean_se <- mean(se[[i]], na.rm = TRUE)  # Calculate the mean
+
+  plot(density(se[[i]], na.rm = TRUE), 
+       main = paste("Density Plot of SE -", colnames(se)[i]), 
+       xlab = "SE", 
+       col = "blue", 
+       lwd = 2,
+       cex.main = 1,
+       ylim = c(0, 20), 
+       xlim = c(0, 1))     
+  
+  axis(1, at = seq(0.1, 0.7, by = 0.1))
+  
+  abline(v = emp_sd, col = "red", lwd = 2, lty = 2)
+  abline(v = mean_se, col = "green", lwd = 2, lty = 2)
+}
+par(mfrow = c(1, 1))
+```
+
+#### Boxplot of SE
+
+```{r boxplot of se}
+#| echo: false
+#| message: false
+#| warning: false
+par(mfrow = c(3, 3), mar = c(4, 4, 2, 1))
+for (i in 1:ncol(se)) {
+  boxplot(se[[i]], 
+          main = paste("Boxplot of SE -", colnames(se)[i]), 
+          ylab = "SE", 
+          col = "lightgreen",
+          ylim = c(0, 0.25))
+ points(1, mean_se, col = "red", pch = 18, cex = 1.5)
+}
+par(mfrow = c(1, 1))
+```
+
+#### Outlier
+
+```{r Detect outliers, echo=FALSE}
+#| message: false
+#| warning: false
+# Helper Function
+detect_outliers <- function(column, remove = FALSE) {
+  Q1 <- quantile(column, 0.25, na.rm = TRUE)
+  Q3 <- quantile(column, 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  outliers <- column[column < lower_bound | column > upper_bound]
+  percentage <- length(outliers) / sum(!is.na(column)) * 100
+  
+  if (remove) {
+    column <- ifelse(column < lower_bound | column > upper_bound, NA, column)
+  }
+  
+  list(
+    cleaned_column = column,  # Column after removing outliers if remove = TRUE
+    outliers = outliers,
+    percentage = percentage,
+    lower_bound = lower_bound,
+    upper_bound = upper_bound
+  )
+}
+
+outlier_results <- lapply(se, detect_outliers, remove = TRUE)
+cleaned_se <- as.data.frame(lapply(outlier_results, `[[`, "cleaned_column"))
+outlier_percentages <- sapply(outlier_results, function(res) res$percentage)
+outlier_table <- data.frame(
+  Method = names(outlier_results),
+  Outlier_Percentage = sapply(outlier_results, function(res) res$percentage)
+)
+print(outlier_table)
+```
+
+#### Confidence Intervals
+
+```{r CI without outliers, echo=FALSE}
+#| message: false
+#| warning: false
+est <- est[1:300, ]
+se <- se[1:300, ]
+
+n_methods <- ncol(est)  # Number of methods
+for (i in 1:n_methods) {
+
+  estimates <- est[, i]
+  se_values <- se[, i]
+  
+  lower_bound <- estimates - 1.96 * se_values
+  upper_bound <- estimates + 1.96 * se_values
+  
+  data <- data.frame(
+    Replication = 1:300,
+    Estimate = estimates,
+    Lower = lower_bound,
+    Upper = upper_bound
+  )
+  
+  plot(
+    data$Replication, data$Estimate, 
+    pch = 16, col = "blue", ylim = c(-2, 2), 
+    xlab = "Replication", ylab = "Estimate", 
+    main = paste("Confidence Intervals -", colnames(est)[i]),
+    cex = 0.8
+  )
+  
+  arrows(
+    x0 = data$Replication, y0 = data$Lower,
+    x1 = data$Replication, y1 = data$Upper,
+    code = 3, angle = 90, length = 0.05, col = "black"
+  )
+  
+  abline(h = 0, col = "red", lty = 2, lwd = 2)
+}
+```
+
+## Examine Summarized Data
+
+```{r}
+#| label: plot functions
+#| message: false
+#| warning: false
+#| include: false
+# Helper Function
+process_data <- function(data) {
+  results <- data %>%
+    gather("var", "val", raw_bias.upi.xm_est_std:rmse.lmsfs.xm_est_std) %>%
+    dplyr::select(-c(REPLICATIONS:WARNINGS)) %>%
+    separate(col = var, into = c("stats", "method"), sep = "\\.") %>%
+    spread(stats, val) %>%
+    mutate(N_lab = as_factor(paste0("italic(N) == ", N)),
+           rel_lab = as_factor(paste0("rho == ", rel)),
+           gammaint_lab = as_factor(paste0("\\beta_{xm} == ", gamma_xm)),
+           skew_lab = as_factor(paste0("Skewness == ", skewness)))
+  
+  return(results)
+}
+
+# Plot function
+plot_results <- function(data,
+                         x_var, y_var, 
+                         x_label, y_label, 
+                         y_limits = NULL, 
+                         color_var = "method", 
+                         shape_var = "method", 
+                         point_size = 3, 
+                         add_lines = FALSE, 
+                         remove_baseline = FALSE,
+                         method_labels = NULL,
+                         method_colors = NULL,
+                         method_shapes = NULL,
+                         method_linetypes = NULL) {
+  
+  unique_methods <- sort(unique(data[[color_var]]))
+  
+  if (is.null(method_labels)) method_labels <- setNames(unique_methods, unique_methods)
+  if (is.null(method_colors)) method_colors <- setNames(RColorBrewer::brewer.pal(length(unique_methods), "Set2"), unique_methods)
+  if (is.null(method_shapes)) method_shapes <- setNames(seq(15, 15 + length(unique_methods) - 1), unique_methods)
+  if (is.null(method_linetypes)) method_linetypes <- setNames(rep("solid", length(unique_methods)), unique_methods)
+  
+  plot <- data %>%
+    ggplot(aes(x = factor(!!sym(x_var)), y = !!sym(y_var), color = !!sym(color_var), shape = !!sym(shape_var))) +
+    geom_point(position = position_jitterdodge(jitter.width = 0, dodge.width = 0), size = point_size, alpha = 0.8) +
+    facet_grid(skew_lab ~ plot_type, labeller = label_parsed) +
+    scale_shape_manual(name = "Method", values = method_shapes, labels = method_labels) +
+    scale_color_manual(name = "Method", values = method_colors, labels = method_labels) +
+    labs(x = x_label, y = y_label, color = "Method", shape = "Method") +
+    theme_minimal() +
+    theme(
+      legend.title = element_text(size = 12, face = "bold"),
+      legend.text = element_text(size = 10),
+      legend.position = "right",
+      strip.text = element_text(size = 12, face = "bold"),
+      panel.border = element_rect(color = "black", fill = NA, linewidth = 1),
+      strip.background = element_rect(color = "black", linewidth = 1),
+      panel.grid.major = element_line(linewidth = 0.5, linetype = 'solid', colour = "gray80"),
+      panel.grid.minor = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.major.y = element_line(linewidth = 0.5, linetype = 'solid', colour = "gray80"),
+      axis.line = element_line(color = "black"),
+      axis.ticks = element_line(color = "black")
+    )
+  
+  if (add_lines) {
+    plot <- plot + 
+      geom_line(aes(group = !!sym(color_var), linetype = !!sym(shape_var)), linewidth = 0.7, alpha = 0.6) +
+      scale_linetype_manual(name = "Method", values = method_linetypes, labels = method_labels)
+  }
+  
+  if (!is.null(y_limits)) {
+    plot <- plot + ylim(y_limits)
+  }
+  
+  return(plot)
+}
+```
+
+### Process Plot Data
+
+```{r}
+#| label: process plot data
+#| echo: true
+#| message: false
+#| warning: false
+
+data_path <- here("Sim_Data", "categorical_03252025.rds")
+df <- readRDS(data_path)
+
+# Combined Data
+df <- df %>%
+  dplyr::mutate(plot_type = case_when(
+    gamma_xm == 0   ~ "TypeI_Error",
+    gamma_xm == 0.3 ~ "Power"
+  ))
+
+df_pd <- process_data(df)
+write_csv(df_pd, here("Sim_Data", "combined_03252025.csv"))
+
+# Split Data
+type1_pd <- df_pd %>% filter(plot_type == "TypeI_Error")
+power_pd <- df_pd %>% filter(plot_type == "Power")
+
+# Write the processed data
+write_csv(type1_pd, here("Sim_Data", "type1_03252025.csv"))
+write_csv(power_pd, here("Sim_Data", "power_03252025.csv"))
+
+# Read the saved data if needed
+type1_df <- read_csv(here("Sim_Data", "type1_03252025.csv"))
+power_df <- read_csv(here("Sim_Data", "power_03252025.csv"))
+```
+
+```{r}
+#| label: labels
+#| message: false
+#| warning: false
+#| include: false
+# Labels
+methods <- c("upi", "tspa", "lms", "lmsfs")
+method_labels = c(upi = "All-Pair UPI", tspa = "2S-PA-Int", 
+                  lms = "LMS", lmsfs = "LMS_FS")
+method_colors = c(upi = "#009E73", tspa = "#CC79A7", 
+                  lms = "#E69F00", lmsfs = "pink") 
+method_shapes = c(upi = 15, tspa = 18, 
+                  lms = 16, lmsfs = 17)
+method_linetypes = c(upi = "twodash", tspa = "dashed",
+                     lms = "solid", lmsfs = "dotted")
+plot_data <- read_csv(here("Sim_Data", "combined_03252025.csv"))
+```
+
+### Raw Bias
+
+```{r}
+#| label: raw bias
+#| echo: false
+#| message: false
+#| warning: false
+#| paged-print: true
+# Raw Bias
+raw_bias_plot <- plot_results(
+  data = plot_data,
+  x_var = "N",
+  y_var = "raw_bias",
+  x_label = "Number of Items",
+  y_label = "Raw Bias",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+raw_bias_plot
+```
+
+### Standardized Bias
+
+```{r}
+#| label: std bias
+#| echo: false
+#| message: false
+#| warning: false
+# Standardized Bias
+std_bias_plot <- plot_results(
+  data = plot_data,
+  x_var = "N",
+  y_var = "std_bias",
+  x_label = "Number of Items",
+  y_label = "Standardized Bias",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+std_bias_plot <- std_bias_plot +
+  geom_hline(yintercept = c(-0.4, 0.4), linetype = "dashed", color = "red")
+
+std_bias_plot
+```
+
+### Raw Relative SE Bias
+
+```{r}
+#| label: raw se bias
+#| echo: false
+#| message: false
+#| warning: false
+# Raw SE Bias
+raw_rse_bias_plot <- plot_results(
+  data = plot_data,
+  x_var = "N",
+  y_var = "raw_rse_bias",
+  x_label = "Number of Items",
+  y_label = "Raw SE Bias",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+raw_rse_bias_plot <- raw_rse_bias_plot +
+  geom_hline(yintercept = c(-0.1, 0.1), linetype = "dashed", color = "red")
+
+raw_rse_bias_plot
+```
+
+### Robust Relative SE Bias
+
+```{r}
+#| label: robust se bias
+#| echo: false
+#| message: false
+#| warning: false
+# Robust SE Bias
+stdMed_rse_bias_plot <- plot_results(
+  data = plot_data,
+  x_var = "N",
+  y_var = "stdMed_rse_bias",
+  x_label = "Number of Items",
+  y_label = "Median-Mad Relative SE Bias",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+stdMed_rse_bias_plot <- stdMed_rse_bias_plot +
+  geom_hline(yintercept = c(-0.1, 0.1), linetype = "dashed", color = "red")
+
+stdMed_rse_bias_plot
+```
+
+### Coverage Rate
+
+```{r}
+#| label: coverage rate
+#| echo: false
+#| message: false
+#| warning: false
+# Coverage rate
+cov_plot <- plot_results(
+  data = plot_data,
+  x_var = "N",
+  y_var = "coverage",
+  x_label = "Number of Items",
+  y_label = "Coverage",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+cov_plot <- cov_plot +
+  geom_hline(yintercept = c(0.91), linetype = "dashed", color = "red")
+
+cov_plot
+```
+
+### RMSE
+
+```{r}
+#| label: rmse
+#| echo: false
+#| message: false
+#| warning: false
+# RMSE
+rmse_plot <- plot_results(
+  data = plot_data,
+  x_var = "N",
+  y_var = "rmse",
+  x_label = "Number of Items",
+  y_label = "RMSE",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+rmse_plot
+```
+
+### Type I Error
+
+```{r}
+#| label: type I error
+#| echo: false
+#| message: false
+#| warning: false
+# Type I Error
+type1_plot <- plot_results(
+  data = type1_df,
+  x_var = "N",
+  y_var = "type1_std",
+  x_label = "Number of Items",
+  y_label = "Type I Error",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+type1_plot
+```
+
+### Power Plot
+
+```{r}
+#| label: power plot
+#| echo: false
+#| message: false
+#| warning: false
+# Power
+power_plot <- plot_results(
+  data = power_df,
+  x_var = "N",
+  y_var = "power_std",
+  x_label = "Number of Items",
+  y_label = "Power",
+  add_lines = TRUE,
+  method_labels = method_labels,
+  method_colors = method_colors,
+  method_shapes = method_shapes,
+  method_linetypes = method_linetypes
+)
+
+power_plot
+```
