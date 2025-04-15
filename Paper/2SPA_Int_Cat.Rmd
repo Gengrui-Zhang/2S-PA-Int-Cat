@@ -1,0 +1,407 @@
+---
+title             : "Two Stage Path Analysis with Interaction for Categorical Indicators"
+shorttitle        : "2S-PA-Int-Cat"
+
+author: 
+  - name          : "Jimmy"
+    affiliation   : "1"
+    # corresponding : yes    # Define only one corresponding author
+    # # address       : "Postal address"
+    # email         : "gengruiz@usc.edu"
+    # role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+    #   - "Conceptualization"
+    #   - "Writing - Original Draft Preparation"
+    #   - "Writing - Review & Editing"
+
+affiliation:
+  - id            : "1"
+    institution   : "University of Southern California"
+
+authornote: |
+  Add Note
+
+floatsintext      : no
+linenumbers       : yes
+draft             : no
+mask              : no
+
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+library("papaja")
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(here)
+library(tidyverse)
+library(semTools)
+library(magick)
+library(SimDesign)
+
+r_scripts <- list.files(here("R"), pattern = "\\.R$", full.names = TRUE)
+lapply(r_scripts, source)
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+```{r message=FALSE, warning=FALSE}
+sim <- readRDS(here("Sim_Data", "categorical_03252025.rds"))
+sim_results <- sim %>% 
+  dplyr::select(-rel,-c(REPLICATIONS:COMPLETED)) %>%
+  mutate(across(where(is.numeric), round, 2)) 
+
+sim_null <- sim_results %>% 
+  filter(gamma_xm == 0) %>%
+  dplyr::select(-gamma_xm)
+sim_alt <- sim_results %>% 
+  filter(gamma_xm == 0.3) %>%
+  dplyr::select(-gamma_xm)
+
+method <- c("UPI-All", "2SPA", "LMS", "LMS-FS")
+```
+
+# Results
+
+```{r helper functions, message=FALSE, warning=FALSE}
+# Help Function for Data Conversion
+convert_to_wide <- function(data, method_vec) {
+  
+  # Pivot the data and format it
+  data_wide <- data %>%
+    pivot_wider(names_from = Skewness,  # Fixed rho_col
+                values_from = method_vec, 
+                names_prefix = "skew_") %>%  # Fixed num_col_prefix
+    group_by(`$\\textit{p}$`) %>%  # Fixed group_col
+    mutate(`$\\textit{p}$` = ifelse(row_number() == 1, as.character(`$\\textit{p}$`), " "),
+           `$\\textit{N/p}$` = as.factor(`$\\textit{N/p}$`),
+           across(where(is.numeric), ~ sprintf("%.2f", .))) %>%
+    ungroup()
+
+  # Update column names
+  col_names <- c("$\\textit{p}$", "$\\textit{N/p}$", paste(rep(c("$\\rho = .70$", "$\\rho = .90$"), length(method_vec))))
+  names(data_wide) <- col_names
+  
+  return(data_wide)
+}
+
+# Helper Function for SB
+bold_if <- function(cell) {
+  first_number <- as.numeric(str_extract(cell, "^[^\\(]+"))
+  if (!is.na(first_number) && abs(first_number) > 0.4) {
+    return(sprintf("\\textbf{%s}", cell))
+  } else {
+    return(cell)
+  }
+}
+
+# Helper Function for MAD
+bold_if_larger_than_10 <- function(cell) {
+  first_number <- as.numeric(str_extract(cell, "^[^\\(]+"))
+  if (!is.na(first_number) && abs(first_number) > 10) {
+    return(sprintf("\\textbf{%s}", cell))
+  } else {
+    return(cell)
+  }
+}
+
+# Helper Function
+bold_if_less_than_91 <- function(cell) {
+  numeric_cell <- as.numeric(cell)
+  if (!is.na(numeric_cell) && abs(numeric_cell) < 91) {
+    return(sprintf("\\textbf{%s}", numeric_cell))
+  } else {
+    return(numeric_cell)
+  }
+}
+```
+
+```{r standardized bias (raw bias), message=FALSE, warning=FALSE}
+# Null Effect
+rb_null <- sim_null %>%
+  dplyr::select(N, skewness, raw_bias.upi.xm_est_std:raw_bias.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(rb_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+sb_null <- sim_null %>%
+  dplyr::select(N, skewness, std_bias.upi.xm_est_std:std_bias.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(sb_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+rbsb_null <- rb_null
+for (col_idx in 3:ncol(rb_null)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = rb_null[, col_idx], y = sb_null[, col_idx])
+  rbsb_null[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rbsb_null)) {
+  rbsb_null[[i]] <- sapply(rbsb_null[[i]], bold_if_larger_than_10)
+}
+
+# Alternative Effect 
+rb_alt <- sim_alt %>%
+  dplyr::select(N, skewness, raw_bias.upi.xm_est_std:raw_bias.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(rb_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+sb_alt <- sim_alt %>%
+  dplyr::select(N, skewness, std_bias.upi.xm_est_std:std_bias.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(sb_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+rbsb_alt <- rb_alt
+for (col_idx in 3:ncol(rb_alt)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = rb_alt[, col_idx], y = sb_alt[, col_idx])
+  rbsb_alt[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rbsb_alt)) {
+  rbsb_alt[[i]] <- sapply(rbsb_alt[[i]], bold_if)
+}
+
+# Table
+rbsb_table <- apa_table(list(`$\\gamma = 0$` = rbsb_null,
+                             `$\\gamma = 0.3$` = rbsb_alt),
+                        merge_method = "table_spanner",
+                        escape = F,
+                        caption = "Standardized Bias and Raw Bias of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+                        align = c(rep("c", ncol(rbsb_null))),
+                        landscape = TRUE,
+                        font_size = "small")
+
+rbsb_table
+```
+```{r RAW relative SE bias with outliers proportion, message=FALSE, warning=FALSE}
+# Null Effect
+rawse_null <- sim_null %>% 
+  dplyr::select(N, skewness, raw_rse_bias.upi.xm_se_std:raw_rse_bias.lmsfs.xm_se_std) %>%
+  mutate(raw_rse_bias.upi.xm_se_std = raw_rse_bias.upi.xm_se_std*100,
+         raw_rse_bias.tspa.xm_se_std = raw_rse_bias.tspa.xm_se_std*100,
+         raw_rse_bias.lms.xm_se_std = raw_rse_bias.lms.xm_se_std*100,
+         raw_rse_bias.lmsfs.xm_se_std = raw_rse_bias.lmsfs.xm_se_std*100,
+         N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(rawse_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+outse_null <- sim_null %>% 
+  dplyr::select(N, skewness, outlier_se.upi.xm_se_std:outlier_se.lmsfs.xm_se_std)
+names(outse_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+for (col_idx in 3:ncol(rawse_null)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_null[, col_idx], y = rawse_null[, col_idx])
+  rawse_null[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rawse_null)) {
+  rawse_null[[i]] <- sapply(rawse_null[[i]], bold_if_larger_than_10)
+}
+
+# Alternative Effect 
+rawse_alt <- sim_alt %>% 
+  dplyr::select(N, skewness, raw_rse_bias.upi.xm_se_std:raw_rse_bias.lmsfs.xm_se_std) %>%
+  mutate(raw_rse_bias.upi.xm_se_std = raw_rse_bias.upi.xm_se_std*100,
+         raw_rse_bias.tspa.xm_se_std = raw_rse_bias.tspa.xm_se_std*100,
+         raw_rse_bias.lms.xm_se_std = raw_rse_bias.lms.xm_se_std*100,
+         raw_rse_bias.lmsfs.xm_se_std = raw_rse_bias.lmsfs.xm_se_std*100,
+         N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(rawse_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+outse_alt <- sim_alt %>% 
+  dplyr::select(N, skewness, outlier_se.upi.xm_se_std:outlier_se.lmsfs.xm_se_std)
+names(outse_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+for (col_idx in 3:ncol(rawse_alt)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_alt[, col_idx], y = rawse_alt[, col_idx])
+  rawse_alt[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(rawse_alt)) {
+  rawse_alt[[i]] <- sapply(rawse_alt[[i]], bold_if_larger_than_10)
+}
+
+# Split Table
+rawse_table <- apa_table(list(`$\\gamma = 0$` = rawse_null,
+                             `$\\gamma = 0.3$` = rawse_alt),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\\%$) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(rawse_null))),
+            
+            landscape = TRUE,
+            font_size = "small")
+rawse_table
+```
+
+```{r ROBUST relative SE bias with outliers proportion, message=FALSE, warning=FALSE}
+# Null Effect
+stdMedse_null <- sim_null %>% 
+  dplyr::select(N, skewness, stdMed_rse_bias.upi.xm_se_std:stdMed_rse_bias.lmsfs.xm_se_std) %>%
+  mutate(stdMed_rse_bias.upi.xm_se_std = stdMed_rse_bias.upi.xm_se_std*100,
+         stdMed_rse_bias.tspa.xm_se_std = stdMed_rse_bias.tspa.xm_se_std*100,
+         stdMed_rse_bias.lms.xm_se_std = stdMed_rse_bias.lms.xm_se_std*100,
+         stdMed_rse_bias.lmsfs.xm_se_std = stdMed_rse_bias.lmsfs.xm_se_std*100,
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(stdMedse_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+outse_null <- sim_null %>% 
+  dplyr::select(N, skewness, outlier_se.upi.xm_se_std:outlier_se.lmsfs.xm_se_std)
+names(outse_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+for (col_idx in 3:ncol(stdMedse_null)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_null[, col_idx], y = stdMedse_null[, col_idx])
+  stdMedse_null[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(stdMedse_null)) {
+  stdMedse_null[[i]] <- sapply(stdMedse_null[[i]], bold_if_larger_than_10)
+}
+
+# Alternative Effect 
+stdMedse_alt <- sim_alt %>% 
+  dplyr::select(N, skewness, stdMed_rse_bias.upi.xm_se_std:stdMed_rse_bias.lmsfs.xm_se_std) %>%
+  mutate(stdMed_rse_bias.upi.xm_se_std = stdMed_rse_bias.upi.xm_se_std*100,
+         stdMed_rse_bias.tspa.xm_se_std = stdMed_rse_bias.tspa.xm_se_std*100,
+         stdMed_rse_bias.lms.xm_se_std = stdMed_rse_bias.lms.xm_se_std*100,
+         stdMed_rse_bias.lmsfs.xm_se_std = stdMed_rse_bias.lmsfs.xm_se_std*100,
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(stdMedse_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+outse_alt <- sim_alt %>% 
+  dplyr::select(N, skewness, outlier_se.upi.xm_se_std:outlier_se.lmsfs.xm_se_std)
+names(outse_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+for (col_idx in 3:ncol(stdMedse_alt)) {
+  combined_values <- mapply(FUN = function(x, y) paste(y, "\ (", x, ")", sep = ""),
+                            x = outse_alt[, col_idx], y = stdMedse_alt[, col_idx])
+  stdMedse_alt[, col_idx] <- combined_values
+}
+
+for (i in 3:ncol(stdMedse_alt)) {
+  stdMedse_alt[[i]] <- sapply(stdMedse_alt[[i]], bold_if_larger_than_10)
+}
+
+# Split Table
+stdMedse_table <- apa_table(list(`$\\gamma = 0$` = stdMedse_null,
+                             `$\\gamma = 0.3$` = stdMedse_alt),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\\%$) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(stdMedse_null))),
+            
+            landscape = TRUE,
+            font_size = "small")
+stdMedse_table
+```
+
+```{r coverage relative SE bias with outliers proportion, message=FALSE, warning=FALSE}
+# Null Effect
+cov_null <- sim_null %>% 
+  dplyr::select(N, skewness, coverage.upi.xm_est_std:coverage.lmsfs.xm_est_std) %>%
+  mutate(coverage.upi.xm_est_std = coverage.upi.xm_est_std*100,
+         coverage.tspa.xm_est_std = coverage.tspa.xm_est_std*100,
+         coverage.lms.xm_est_std = coverage.lms.xm_est_std*100,
+         coverage.lmsfs.xm_est_std = coverage.lmsfs.xm_est_std*100,
+         N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(cov_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+for (i in 3:ncol(cov_null)) {
+  cov_null[[i]] <- sapply(cov_null[[i]], bold_if_less_than_91)
+}
+
+# Alternative Effect 
+cov_alt <- sim_alt %>% 
+  dplyr::select(N, skewness, coverage.upi.xm_est_std:coverage.lmsfs.xm_est_std) %>%
+  mutate(coverage.upi.xm_est_std = coverage.upi.xm_est_std*100,
+         coverage.tspa.xm_est_std = coverage.tspa.xm_est_std*100,
+         coverage.lms.xm_est_std = coverage.lms.xm_est_std*100,
+         coverage.lmsfs.xm_est_std = coverage.lmsfs.xm_est_std*100,
+         N = as.character(N),
+         across(where(is.numeric), ~ sprintf("%.2f", .)))
+names(cov_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+for (i in 3:ncol(cov_alt)) {
+  cov_alt[[i]] <- sapply(cov_alt[[i]], bold_if_less_than_91)
+}
+
+# Split Table
+cov_table <- apa_table(list(`$\\gamma = 0$` = cov_null,
+                             `$\\gamma = 0.3$` = cov_alt),
+                        merge_method = "table_spanner",
+            escape = F,
+            caption = "Coverage Rate of 95 $\\%$ Confidence Interval (CI) of Path Coefficient Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(cov_null))),
+            landscape = TRUE,
+            font_size = "small")
+cov_table
+```
+
+```{r rmse, message=FALSE, warning=FALSE}
+# Null Effect
+rmse_null <- sim_null %>% 
+  dplyr::select(N, skewness, rmse.upi.xm_est_std:rmse.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N))
+names(rmse_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+# Alternative Effect
+rmse_alt <- sim_alt %>% 
+  dplyr::select(N, skewness, rmse.upi.xm_est_std:rmse.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N))
+names(rmse_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+# Table
+rmse_table <- apa_table(list(`$\\gamma = 0$` = rmse_null,
+                             `$\\gamma = 0.3$` = rmse_alt),
+                       merge_method = "table_spanner",
+            escape = F,
+            caption = "Root Mean Square Error (RMSE) of Latent Interaction Estimates ($\\gamma$) Across 2,000 Replications.",
+            align = c(rep("c", ncol(rmse_null))),
+            landscape = TRUE,
+            font_size = "small")
+
+rmse_table
+```
+
+```{r type I error and Power, message=FALSE, warning=FALSE}
+type1_null <- sim_null %>%
+  dplyr::select(N, skewness, type1_std.upi.xm_est_std:type1_std.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N))
+names(type1_null) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+power_alt <- sim_alt %>%
+  dplyr::select(N, skewness, power_std.upi.xm_est_std:power_std.lmsfs.xm_est_std) %>%
+  mutate(N = as.character(N))
+names(power_alt) <- c(c("$\\textit{N}$", "Skewness"), method)
+
+type1_power_table <- apa_table(
+  list(`Empirical Type I Error Rate ($\\gamma = 0$)` = type1_null,
+       `Statistical Power ($\\gamma = 0.3$)` = power_alt), 
+  merge_method = "table_spanner",
+            escape = F,
+            caption = "Empirical Type I Error Rate and Statistical Power Across 2,000 Replications.",
+            align = c(rep("c", ncol(type1_null))),
+            landscape = TRUE,
+            font_size = "small")
+
+type1_power_table
+```

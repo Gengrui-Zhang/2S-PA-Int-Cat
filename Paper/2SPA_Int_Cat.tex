@@ -1,0 +1,413 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  man]{apa6}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+\ifLuaTeX
+\usepackage[bidi=basic]{babel}
+\else
+\usepackage[bidi=default]{babel}
+\fi
+\babelprovide[main,import]{english}
+% get rid of language-specific shorthands (see #6817):
+\let\LanguageShortHands\languageshorthands
+\def\languageshorthands#1{}
+% Manuscript styling
+\usepackage{upgreek}
+\captionsetup{font=singlespacing,justification=justified}
+
+% Table formatting
+\usepackage{longtable}
+\usepackage{lscape}
+% \usepackage[counterclockwise]{rotating}   % Landscape page setup for large tables
+\usepackage{multirow}		% Table styling
+\usepackage{tabularx}		% Control Column width
+\usepackage[flushleft]{threeparttable}	% Allows for three part tables with a specified notes section
+\usepackage{threeparttablex}            % Lets threeparttable work with longtable
+
+% Create new environments so endfloat can handle them
+% \newenvironment{ltable}
+%   {\begin{landscape}\centering\begin{threeparttable}}
+%   {\end{threeparttable}\end{landscape}}
+\newenvironment{lltable}{\begin{landscape}\centering\begin{ThreePartTable}}{\end{ThreePartTable}\end{landscape}}
+
+% Enables adjusting longtable caption width to table width
+% Solution found at http://golatex.de/longtable-mit-caption-so-breit-wie-die-tabelle-t15767.html
+\makeatletter
+\newcommand\LastLTentrywidth{1em}
+\newlength\longtablewidth
+\setlength{\longtablewidth}{1in}
+\newcommand{\getlongtablewidth}{\begingroup \ifcsname LT@\roman{LT@tables}\endcsname \global\longtablewidth=0pt \renewcommand{\LT@entry}[2]{\global\advance\longtablewidth by ##2\relax\gdef\LastLTentrywidth{##2}}\@nameuse{LT@\roman{LT@tables}} \fi \endgroup}
+
+% \setlength{\parindent}{0.5in}
+% \setlength{\parskip}{0pt plus 0pt minus 0pt}
+
+% Overwrite redefinition of paragraph and subparagraph by the default LaTeX template
+% See https://github.com/crsh/papaja/issues/292
+\makeatletter
+\renewcommand{\paragraph}{\@startsection{paragraph}{4}{\parindent}%
+  {0\baselineskip \@plus 0.2ex \@minus 0.2ex}%
+  {-1em}%
+  {\normalfont\normalsize\bfseries\itshape\typesectitle}}
+
+\renewcommand{\subparagraph}[1]{\@startsection{subparagraph}{5}{1em}%
+  {0\baselineskip \@plus 0.2ex \@minus 0.2ex}%
+  {-\z@\relax}%
+  {\normalfont\normalsize\itshape\hspace{\parindent}{#1}\textit{\addperi}}{\relax}}
+\makeatother
+
+\makeatletter
+\usepackage{etoolbox}
+\patchcmd{\maketitle}
+  {\section{\normalfont\normalsize\abstractname}}
+  {\section*{\normalfont\normalsize\abstractname}}
+  {}{\typeout{Failed to patch abstract.}}
+\patchcmd{\maketitle}
+  {\section{\protect\normalfont{\@title}}}
+  {\section*{\protect\normalfont{\@title}}}
+  {}{\typeout{Failed to patch title.}}
+\makeatother
+
+\usepackage{xpatch}
+\makeatletter
+\xapptocmd\appendix
+  {\xapptocmd\section
+    {\addcontentsline{toc}{section}{\appendixname\ifoneappendix\else~\theappendix\fi: #1}}
+    {}{\InnerPatchFailed}%
+  }
+{}{\PatchFailed}
+\makeatother
+\DeclareDelayedFloatFlavor{ThreePartTable}{table}
+\DeclareDelayedFloatFlavor{lltable}{table}
+\DeclareDelayedFloatFlavor*{longtable}{table}
+\makeatletter
+\renewcommand{\efloat@iwrite}[1]{\immediate\expandafter\protected@write\csname efloat@post#1\endcsname{}}
+\makeatother
+\usepackage{lineno}
+
+\linenumbers
+\usepackage{csquotes}
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Two Stage Path Analysis with Interaction for Categorical Indicators},
+  pdfauthor={Jimmy1},
+  pdflang={en-EN},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Two Stage Path Analysis with Interaction for Categorical Indicators}
+\author{Jimmy\textsuperscript{1}}
+\date{}
+
+
+\shorttitle{2S-PA-Int-Cat}
+
+\authornote{
+
+Add Note
+
+}
+
+\affiliation{\vspace{0.5cm}\textsuperscript{1} University of Southern California}
+
+\begin{document}
+\maketitle
+
+\section{Results}\label{results}
+
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:standardized bias (raw bias)}Standardized Bias and Raw Bias of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:standardized bias (raw bias)} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & 0.00 (0.00) & -0.03 (-0.00) & -0.03 (-0.00) & -0.03 (-0.00)\\
+250 & symm & 0.01 (0.00) & 0.00 (0.00) & 0.00 (0.00) & -0.00 (-0.00)\\
+500 & symm & 0.01 (0.00) & 0.01 (0.00) & 0.02 (0.00) & 0.02 (0.00)\\
+100 & skew & -0.12 (-0.07) & -0.14 (-0.03) & 1.12 (0.41) & -0.02 (-0.00)\\
+250 & skew & -0.41 (-0.13) & -0.28 (-0.03) & 0.27 (0.06) & -0.03 (-0.00)\\
+500 & skew & -0.78 (-0.16) & -0.36 (-0.03) & 0.04 (0.00) & -0.01 (-0.00)\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & 0.23 (0.13) & 0.05 (0.01) & -0.13 (-0.02) & -0.22 (-0.03)\\
+250 & symm & \textbf{0.45 (0.13)} & 0.16 (0.02) & -0.08 (-0.01) & -0.12 (-0.01)\\
+500 & symm & \textbf{0.62 (0.12)} & 0.32 (0.02) & -0.06 (-0.00) & -0.05 (-0.00)\\
+100 & skew & -0.03 (-0.02) & -0.05 (-0.01) & \textbf{0.74 (0.17)} & -0.19 (-0.03)\\
+250 & skew & 0.17 (0.07) & -0.09 (-0.01) & 0.20 (0.03) & -0.10 (-0.01)\\
+500 & skew & 0.35 (0.11) & -0.04 (-0.00) & -0.02 (-0.00) & -0.02 (-0.00)\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:RAW relative SE bias with outliers proportion}Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:RAW relative SE bias with outliers proportion} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & \textbf{-18.00 (11.1)} & -0.00 (5.05) & 8.00 (3.4) & \textbf{-75.00 (3.9)}\\
+250 & symm & -10.00 (8.35) & -0.00 (2.25) & 1.00 (2.1) & \textbf{-80.00 (5.75)}\\
+500 & symm & -5.00 (6.5) & 0.00 (2) & 1.00 (2.65) & \textbf{-79.00 (6.2)}\\
+100 & skew & \textbf{-29.00 (10.6)} & -2.00 (5.5) & \textbf{-61.00 (12.8)} & \textbf{-77.00 (4.6)}\\
+250 & skew & \textbf{-30.00 (9.15)} & 1.00 (3.3) & \textbf{-61.00 (2.95)} & \textbf{-79.00 (5.3)}\\
+500 & skew & \textbf{-20.00 (7.05)} & -2.00 (2.1) & \textbf{-25.00 (1.8)} & \textbf{-82.00 (5.45)}\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & -6.00 (11.6) & 2.00 (4.3) & 1.00 (3.95) & \textbf{-52.00 (3.7)}\\
+250 & symm & \textbf{-11.00 (9.9)} & 9.00 (1.9) & 4.00 (3.05) & \textbf{-42.00 (4.4)}\\
+500 & symm & \textbf{-13.00 (7.3)} & 9.00 (2.1) & 5.00 (2.35) & \textbf{-34.00 (6.4)}\\
+100 & skew & \textbf{-31.00 (9.35)} & -0.00 (5.8) & \textbf{-39.00 (10)} & \textbf{-57.00 (2.7)}\\
+250 & skew & \textbf{-42.00 (10.15)} & 5.00 (3.15) & \textbf{-35.00 (3.45)} & \textbf{-52.00 (2.7)}\\
+500 & skew & \textbf{-37.00 (9.8)} & 7.00 (2.05) & -4.00 (2.2) & \textbf{-48.00 (2.95)}\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:ROBUST relative SE bias with outliers proportion}Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:ROBUST relative SE bias with outliers proportion} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100.00 & symm & 5.00 (11.1) & 1.00 (5.05) & -7.00 (3.4) & \textbf{-83.00 (3.9)}\\
+250.00 & symm & 4.00 (8.35) & -2.00 (2.25) & -1.00 (2.1) & \textbf{-87.00 (5.75)}\\
+500.00 & symm & -1.00 (6.5) & -1.00 (2) & -4.00 (2.65) & \textbf{-90.00 (6.2)}\\
+100.00 & skew & -10.00 (10.6) & -0.00 (5.5) & \textbf{-64.00 (12.8)} & \textbf{-83.00 (4.6)}\\
+250.00 & skew & \textbf{-12.00 (9.15)} & -1.00 (3.3) & \textbf{-14.00 (2.95)} & \textbf{-88.00 (5.3)}\\
+500.00 & skew & -6.00 (7.05) & -3.00 (2.1) & -4.00 (1.8) & \textbf{-90.00 (5.45)}\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100.00 & symm & -10.00 (11.6) & 4.00 (4.3) & -9.00 (3.95) & \textbf{-60.00 (3.7)}\\
+250.00 & symm & -1.00 (9.9) & \textbf{11.00 (1.9)} & 2.00 (3.05) & \textbf{-52.00 (4.4)}\\
+500.00 & symm & -1.00 (7.3) & 10.00 (2.1) & 2.00 (2.35) & \textbf{-50.00 (6.4)}\\
+100.00 & skew & \textbf{-25.00 (9.35)} & 6.00 (5.8) & \textbf{-45.00 (10)} & \textbf{-58.00 (2.7)}\\
+250.00 & skew & \textbf{-25.00 (10.15)} & 4.00 (3.15) & \textbf{-13.00 (3.45)} & \textbf{-56.00 (2.7)}\\
+500.00 & skew & \textbf{-28.00 (9.8)} & 9.00 (2.05) & 2.00 (2.2) & \textbf{-53.00 (2.95)}\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:coverage relative SE bias with outliers proportion}Coverage Rate of 95 $\%$ Confidence Interval (CI) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:coverage relative SE bias with outliers proportion} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & 99 & 96.00 & 93 & \textbf{19}\\
+250 & symm & 99 & 96.00 & 94 & \textbf{16}\\
+500 & symm & 98 & 95.00 & 94 & \textbf{16}\\
+100 & skew & 98 & 97.00 & \textbf{38} & \textbf{19}\\
+250 & skew & 95 & 96.00 & \textbf{86} & \textbf{18}\\
+500 & skew & \textbf{88} & 94.00 & 93 & \textbf{15}\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & 91 & 97.00 & 93 & \textbf{61}\\
+250 & symm & 96 & 97.00 & 95 & \textbf{67}\\
+500 & symm & 98 & 97.00 & 96 & \textbf{69}\\
+100 & skew & \textbf{78} & 96.00 & \textbf{54} & \textbf{60}\\
+250 & skew & \textbf{86} & 95.00 & \textbf{85} & \textbf{64}\\
+500 & skew & \textbf{90} & 96.00 & 95 & \textbf{65}\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:rmse}Root Mean Square Error (RMSE) of Latent Interaction Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:rmse} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & 0.49 & 0.16 & 0.14 & 0.13\\
+250 & symm & 0.19 & 0.10 & 0.08 & 0.08\\
+500 & symm & 0.11 & 0.07 & 0.06 & 0.06\\
+100 & skew & 0.60 & 0.19 & 0.55 & 0.15\\
+250 & skew & 0.34 & 0.11 & 0.23 & 0.09\\
+500 & skew & 0.25 & 0.08 & 0.08 & 0.06\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & 0.57 & 0.16 & 0.13 & 0.13\\
+250 & symm & 0.33 & 0.10 & 0.08 & 0.08\\
+500 & symm & 0.24 & 0.07 & 0.05 & 0.05\\
+100 & skew & 0.60 & 0.19 & 0.29 & 0.14\\
+250 & skew & 0.44 & 0.11 & 0.14 & 0.09\\
+500 & skew & 0.32 & 0.07 & 0.06 & 0.06\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:type I error and Power}Empirical Type I Error Rate and Statistical Power Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:type I error and Power} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{Empirical Type I Error Rate ($\gamma = 0$)}\\
+100 & symm & 0.01 & 0.04 & 0.07 & 0.81\\
+250 & symm & 0.01 & 0.04 & 0.06 & 0.84\\
+500 & symm & 0.02 & 0.05 & 0.06 & 0.84\\
+100 & skew & 0.02 & 0.03 & 0.62 & 0.81\\
+250 & skew & 0.05 & 0.04 & 0.14 & 0.82\\
+500 & skew & 0.12 & 0.06 & 0.07 & 0.85\\
+\multicolumn{6}{c}{Statistical Power ($\gamma = 0.3$)}\\
+100 & symm & 0.09 & 0.47 & 0.60 & 0.95\\
+250 & symm & 0.47 & 0.91 & 0.94 & 0.96\\
+500 & symm & 0.88 & 1.00 & 1.00 & 0.95\\
+100 & skew & 0.12 & 0.35 & 0.79 & 0.95\\
+250 & skew & 0.36 & 0.79 & 0.90 & 0.98\\
+500 & skew & 0.68 & 0.98 & 1.00 & 0.98\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+
+
+\end{document}

@@ -1,0 +1,220 @@
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:standardized bias (raw bias)}Standardized Bias and Raw Bias of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:standardized bias (raw bias)} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & 0.00 (0.00) & -0.03 (-0.00) & -0.03 (-0.00) & -0.03 (-0.00)\\
+250 & symm & 0.01 (0.00) & 0.00 (0.00) & 0.00 (0.00) & -0.00 (-0.00)\\
+500 & symm & 0.01 (0.00) & 0.01 (0.00) & 0.02 (0.00) & 0.02 (0.00)\\
+100 & skew & -0.12 (-0.07) & -0.14 (-0.03) & 1.12 (0.41) & -0.02 (-0.00)\\
+250 & skew & -0.41 (-0.13) & -0.28 (-0.03) & 0.27 (0.06) & -0.03 (-0.00)\\
+500 & skew & -0.78 (-0.16) & -0.36 (-0.03) & 0.04 (0.00) & -0.01 (-0.00)\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & 0.23 (0.13) & 0.05 (0.01) & -0.13 (-0.02) & -0.22 (-0.03)\\
+250 & symm & \textbf{0.45 (0.13)} & 0.16 (0.02) & -0.08 (-0.01) & -0.12 (-0.01)\\
+500 & symm & \textbf{0.62 (0.12)} & 0.32 (0.02) & -0.06 (-0.00) & -0.05 (-0.00)\\
+100 & skew & -0.03 (-0.02) & -0.05 (-0.01) & \textbf{0.74 (0.17)} & -0.19 (-0.03)\\
+250 & skew & 0.17 (0.07) & -0.09 (-0.01) & 0.20 (0.03) & -0.10 (-0.01)\\
+500 & skew & 0.35 (0.11) & -0.04 (-0.00) & -0.02 (-0.00) & -0.02 (-0.00)\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:RAW relative SE bias with outliers proportion}Raw Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:RAW relative SE bias with outliers proportion} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & \textbf{-18.00 (11.1)} & -0.00 (5.05) & 8.00 (3.4) & \textbf{-75.00 (3.9)}\\
+250 & symm & -10.00 (8.35) & -0.00 (2.25) & 1.00 (2.1) & \textbf{-80.00 (5.75)}\\
+500 & symm & -5.00 (6.5) & 0.00 (2) & 1.00 (2.65) & \textbf{-79.00 (6.2)}\\
+100 & skew & \textbf{-29.00 (10.6)} & -2.00 (5.5) & \textbf{-61.00 (12.8)} & \textbf{-77.00 (4.6)}\\
+250 & skew & \textbf{-30.00 (9.15)} & 1.00 (3.3) & \textbf{-61.00 (2.95)} & \textbf{-79.00 (5.3)}\\
+500 & skew & \textbf{-20.00 (7.05)} & -2.00 (2.1) & \textbf{-25.00 (1.8)} & \textbf{-82.00 (5.45)}\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & -6.00 (11.6) & 2.00 (4.3) & 1.00 (3.95) & \textbf{-52.00 (3.7)}\\
+250 & symm & \textbf{-11.00 (9.9)} & 9.00 (1.9) & 4.00 (3.05) & \textbf{-42.00 (4.4)}\\
+500 & symm & \textbf{-13.00 (7.3)} & 9.00 (2.1) & 5.00 (2.35) & \textbf{-34.00 (6.4)}\\
+100 & skew & \textbf{-31.00 (9.35)} & -0.00 (5.8) & \textbf{-39.00 (10)} & \textbf{-57.00 (2.7)}\\
+250 & skew & \textbf{-42.00 (10.15)} & 5.00 (3.15) & \textbf{-35.00 (3.45)} & \textbf{-52.00 (2.7)}\\
+500 & skew & \textbf{-37.00 (9.8)} & 7.00 (2.05) & -4.00 (2.2) & \textbf{-48.00 (2.95)}\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:ROBUST relative SE bias with outliers proportion}Robust Relative Standard Error (SE) Bias Ratio and Outlier Proportion of SE ($\%$) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:ROBUST relative SE bias with outliers proportion} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100.00 & symm & 5.00 (11.1) & 1.00 (5.05) & -7.00 (3.4) & \textbf{-83.00 (3.9)}\\
+250.00 & symm & 4.00 (8.35) & -2.00 (2.25) & -1.00 (2.1) & \textbf{-87.00 (5.75)}\\
+500.00 & symm & -1.00 (6.5) & -1.00 (2) & -4.00 (2.65) & \textbf{-90.00 (6.2)}\\
+100.00 & skew & -10.00 (10.6) & -0.00 (5.5) & \textbf{-64.00 (12.8)} & \textbf{-83.00 (4.6)}\\
+250.00 & skew & \textbf{-12.00 (9.15)} & -1.00 (3.3) & \textbf{-14.00 (2.95)} & \textbf{-88.00 (5.3)}\\
+500.00 & skew & -6.00 (7.05) & -3.00 (2.1) & -4.00 (1.8) & \textbf{-90.00 (5.45)}\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100.00 & symm & -10.00 (11.6) & 4.00 (4.3) & -9.00 (3.95) & \textbf{-60.00 (3.7)}\\
+250.00 & symm & -1.00 (9.9) & \textbf{11.00 (1.9)} & 2.00 (3.05) & \textbf{-52.00 (4.4)}\\
+500.00 & symm & -1.00 (7.3) & 10.00 (2.1) & 2.00 (2.35) & \textbf{-50.00 (6.4)}\\
+100.00 & skew & \textbf{-25.00 (9.35)} & 6.00 (5.8) & \textbf{-45.00 (10)} & \textbf{-58.00 (2.7)}\\
+250.00 & skew & \textbf{-25.00 (10.15)} & 4.00 (3.15) & \textbf{-13.00 (3.45)} & \textbf{-56.00 (2.7)}\\
+500.00 & skew & \textbf{-28.00 (9.8)} & 9.00 (2.05) & 2.00 (2.2) & \textbf{-53.00 (2.95)}\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:coverage relative SE bias with outliers proportion}Coverage Rate of 95 $\%$ Confidence Interval (CI) of Path Coefficient Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:coverage relative SE bias with outliers proportion} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & 99 & 96.00 & 93 & \textbf{19}\\
+250 & symm & 99 & 96.00 & 94 & \textbf{16}\\
+500 & symm & 98 & 95.00 & 94 & \textbf{16}\\
+100 & skew & 98 & 97.00 & \textbf{38} & \textbf{19}\\
+250 & skew & 95 & 96.00 & \textbf{86} & \textbf{18}\\
+500 & skew & \textbf{88} & 94.00 & 93 & \textbf{15}\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & 91 & 97.00 & 93 & \textbf{61}\\
+250 & symm & 96 & 97.00 & 95 & \textbf{67}\\
+500 & symm & 98 & 97.00 & 96 & \textbf{69}\\
+100 & skew & \textbf{78} & 96.00 & \textbf{54} & \textbf{60}\\
+250 & skew & \textbf{86} & 95.00 & \textbf{85} & \textbf{64}\\
+500 & skew & \textbf{90} & 96.00 & 95 & \textbf{65}\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:rmse}Root Mean Square Error (RMSE) of Latent Interaction Estimates ($\gamma$) Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:rmse} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{$\gamma = 0$}\\
+100 & symm & 0.49 & 0.16 & 0.14 & 0.13\\
+250 & symm & 0.19 & 0.10 & 0.08 & 0.08\\
+500 & symm & 0.11 & 0.07 & 0.06 & 0.06\\
+100 & skew & 0.60 & 0.19 & 0.55 & 0.15\\
+250 & skew & 0.34 & 0.11 & 0.23 & 0.09\\
+500 & skew & 0.25 & 0.08 & 0.08 & 0.06\\
+\multicolumn{6}{c}{$\gamma = 0.3$}\\
+100 & symm & 0.57 & 0.16 & 0.13 & 0.13\\
+250 & symm & 0.33 & 0.10 & 0.08 & 0.08\\
+500 & symm & 0.24 & 0.07 & 0.05 & 0.05\\
+100 & skew & 0.60 & 0.19 & 0.29 & 0.14\\
+250 & skew & 0.44 & 0.11 & 0.14 & 0.09\\
+500 & skew & 0.32 & 0.07 & 0.06 & 0.06\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}
+\efloatseparator
+ 
+\begin{lltable}
+
+\small{
+
+\begin{longtable}{cccccc}\noalign{\getlongtablewidth\global\LTcapwidth=\longtablewidth}
+\caption{\label{tab:type I error and Power}Empirical Type I Error Rate and Statistical Power Across 2,000 Replications.}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endfirsthead
+\caption*{\normalfont{Table \ref{tab:type I error and Power} continued}}\\
+\toprule
+$\textit{N}$ & \multicolumn{1}{c}{Skewness} & \multicolumn{1}{c}{UPI-All} & \multicolumn{1}{c}{2SPA} & \multicolumn{1}{c}{LMS} & \multicolumn{1}{c}{LMS-FS}\\
+\midrule
+\endhead
+\multicolumn{6}{c}{Empirical Type I Error Rate ($\gamma = 0$)}\\
+100 & symm & 0.01 & 0.04 & 0.07 & 0.81\\
+250 & symm & 0.01 & 0.04 & 0.06 & 0.84\\
+500 & symm & 0.02 & 0.05 & 0.06 & 0.84\\
+100 & skew & 0.02 & 0.03 & 0.62 & 0.81\\
+250 & skew & 0.05 & 0.04 & 0.14 & 0.82\\
+500 & skew & 0.12 & 0.06 & 0.07 & 0.85\\
+\multicolumn{6}{c}{Statistical Power ($\gamma = 0.3$)}\\
+100 & symm & 0.09 & 0.47 & 0.60 & 0.95\\
+250 & symm & 0.47 & 0.91 & 0.94 & 0.96\\
+500 & symm & 0.88 & 1.00 & 1.00 & 0.95\\
+100 & skew & 0.12 & 0.35 & 0.79 & 0.95\\
+250 & skew & 0.36 & 0.79 & 0.90 & 0.98\\
+500 & skew & 0.68 & 0.98 & 1.00 & 0.98\\
+\bottomrule
+\end{longtable}
+
+}
+
+\end{lltable}

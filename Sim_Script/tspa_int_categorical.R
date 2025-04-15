@@ -37,7 +37,7 @@ FIXED <- list(gamma_x = 0.3,
               )
 
 # Temporary directory
-FIXED$temp_session <- tempdir()
+FIXED$temp_session <- "/Users/jimmy_z/R Projects/2S-PA-Int-Cat/temp_folder"
 
 # UPI syntax
 FIXED$upi_syntax <- "
@@ -51,10 +51,20 @@ FIXED$upi_syntax <- "
   # Define Standardized Coefficients
     X ~~ v1*X
     M ~~ v2*M
+  # Covariance
+    IM ~~ cov_12*EM
+    IM ~~ cov_13*Int
+    EM ~~ cov_23*Int
+  # Disturbance
+    Y ~~ dist_y*Y
+    var_y :=  dist_y + (b1^2 * v1 + b2^2 * v2 + b3^2 * v3 + 
+                        2 * b1 * b2 * cov_12 + 
+                        2 * b1 * b3 * cov_13 + 
+                        2 * b2 * b3 * cov_23)
   # Standardized coefficients
-    stdx_b1 := b1*sqrt(v1)
-    stdx_b2 := b2*sqrt(v2)
-    stdx_b3 := b3*sqrt(v1)*sqrt(v2)
+    beta1 := b1*sqrt(v1)/sqrt(var_y)
+    beta2 := b2*sqrt(v2)/sqrt(var_y)
+    beta3 := b3*sqrt(v1)*sqrt(v2)/sqrt(var_y)
 "
 
 # LMS syntax
@@ -83,17 +93,18 @@ ANALYSIS:
   ALGORITHM = INTEGRATION;  
 
 MODEL:
-  X BY x1* x2* x3*;   
-  M BY m1* m2* m3* m4* m5* m6* m7* m8* m9* m10* m11* m12*;   
-  Y BY y1* y2* y3*;   
+  X BY x1* x2-x3;   
+  M BY m1* m2-m12;   
+  Y BY y1* y2-y3;   
   XM | X XWITH M;  
 
-  Y ON X* M* XM*;   
+  Y ON X M XM;   
 
   X@1;  ! Fix variance of X
   M@1;  ! Fix variance of M
-  X WITH M*;
-  Y*;
+  Y@1;  ! Fix (residual) variance of Y
+  
+  X WITH M;
 
 OUTPUT:
   sampstat standardized tech1 CINTERVAL;  
@@ -123,6 +134,7 @@ ANALYSIS:
         
 MODEL:  !outcome
           Y BY fs_y*1 (ld_fsy);
+          Y (resvar_Y);
           fs_y* (ev_fsy);
           
           !predictor
@@ -137,12 +149,18 @@ MODEL:  !outcome
 
           !product indicator
           XM BY fs_xm*1 (ld_fsxm);
+          XM (var_XM);
           fs_xm* (ev_fsxm);
+          
+          !covariances between predictors
+          X WITH M (cov_XM);
+          X WITH XM (cov_XXM);
+          M WITH XM (cov_MXM);
 
           !structural model
-          Y ON X(b1); 
-          Y ON M(b2);
-          Y ON XM(b3);
+          Y ON X (b1); 
+          Y ON M (b2);
+          Y ON XM (b3);
           
   MODEL CONSTRAINT:
           ld_fsy = rel_fs_y;
@@ -154,12 +172,18 @@ MODEL:  !outcome
           ld_fsxm = ld_fs_xm;
           ev_fsxm = ev_fs_xm;
           
-          New(stdx_b1);
-          stdx_b1 = b1*sqrt(var_X);
-          New(stdx_b2);
-          stdx_b2 = b2*sqrt(var_M);
-          New(stdx_b3);
-          stdx_b3 = b3*sqrt(var_X)*sqrt(var_M);
+          NEW(var_Y std_b1 std_b2 std_b3);  
+          var_Y = resvar_Y + 
+           (b1^2 * var_X + 
+            b2^2 * var_M + 
+            b3^2 * var_XM + 
+            2 * b1 * b2 * cov_XM + 
+            2 * b1 * b3 * cov_XXM + 
+            2 * b2 * b3 * cov_MXM);
+            
+            std_b1 = b1 * sqrt(var_X) / sqrt(var_Y);
+            std_b2 = b2 * sqrt(var_M) / sqrt(var_Y);
+            std_b3 = b3 * sqrt(var_X) * sqrt(var_M) / sqrt(var_Y);
 
 OUTPUT:
   sampstat tech1 CINTERVAL;  
@@ -511,7 +535,8 @@ analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
   MplusAutomation::runModels(
     temp_session,
     filefilter = mplus_files[[2]],
-    Mplus_command = "/opt/mplus/8.7/mplus")
+    #Mplus_command = "/opt/mplus/8.7/mplus",
+    Mplus_command = "/Applications/Mplus/mplus")
   
   # Extract results
   # Read lines
@@ -557,7 +582,8 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
   MplusAutomation::runModels(
     temp_session,
     filefilter = mplus_files[[2]],
-    Mplus_command = "/opt/mplus/8.7/mplus")
+    #Mplus_command = "/opt/mplus/8.7/mplus",
+    Mplus_command = "/Applications/Mplus/mplus")
   
   # Extract results
   # Read lines
@@ -604,7 +630,8 @@ analyze_lmsfs <- function (condition, dat, fixed_objects = NULL) {
   MplusAutomation::runModels(
     temp_session,
     filefilter = mplus_files[[2]],
-    Mplus_command = "/opt/mplus/8.7/mplus")
+    #Mplus_command = "/opt/mplus/8.7/mplus",
+    Mplus_command = "/Applications/Mplus/mplus")
   
   # Extract results
   # Read lines

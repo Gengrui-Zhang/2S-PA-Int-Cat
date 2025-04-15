@@ -1,0 +1,388 @@
+Mplus VERSION 8.8 (Mac)
+MUTHEN & MUTHEN
+04/15/2025  12:36 PM
+
+INPUT INSTRUCTIONS
+
+
+  TITLE: LMS using factor scores
+
+  DATA:
+    FILE = lmsfs_simdat_1.dat;
+    FORMAT IS FREE;
+
+  VARIABLE:
+    NAMES = fs_y rel_fs_y ev_fs_y
+            fs_x se_fs_x fs_m se_fs_m
+            ev_fs_m ev_fs_x rel_fs_m rel_fs_x
+            ev_fs_xm ld_fs_xm fs_xm;
+    USEVARIABLES = fs_y fs_x fs_m;
+    CONSTRAINT = rel_fs_y rel_fs_m rel_fs_x
+                 ev_fs_y ev_fs_m ev_fs_x;
+
+  ANALYSIS:
+          TYPE = RANDOM;
+          ALGORITHM = INTEGRATION;
+  MODEL:  !outcome
+            Y BY fs_y*1 (ld_fsy);
+            fs_y* (ev_fsy);
+
+            !predictor
+            X BY fs_x*1 (ld_fsx);
+            X (var_X);
+            fs_x* (ev_fsx);
+
+            !moderator
+            M BY fs_m*1 (ld_fsm);
+            M (var_M);
+            fs_m* (ev_fsm);
+
+            !interaction model
+            XM | X XWITH M;
+
+            !structural model
+            Y ON X(b1);
+            Y ON M(b2);
+            Y ON XM(b3);
+
+    MODEL CONSTRAINT:
+            ld_fsy = rel_fs_y;
+            ev_fsy = ev_fs_y;
+            ld_fsx = rel_fs_x;
+            ev_fsx = ev_fs_x;
+            ld_fsm = rel_fs_m;
+            ev_fsm = ev_fs_m;
+
+            New(stdx_b1);
+            stdx_b1 = b1*sqrt(var_X);
+            New(stdx_b2);
+            stdx_b2 = b2*sqrt(var_M);
+            New(stdx_b3);
+            stdx_b3 = b3*sqrt(var_X)*sqrt(var_M);
+
+  OUTPUT:
+    sampstat tech1 CINTERVAL;
+
+  SAVEDATA:
+    RESULTS = lmsfs_results_1.dat;
+
+
+
+
+INPUT READING TERMINATED NORMALLY
+
+
+
+LMS using factor scores
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                         100
+
+Number of dependent variables                                    3
+Number of independent variables                                  0
+Number of continuous latent variables                            4
+
+Observed dependent variables
+
+  Continuous
+   FS_Y        FS_X        FS_M
+
+Continuous latent variables
+   Y           X           M           XM
+
+
+Estimator                                                      MLR
+Information matrix                                        OBSERVED
+Optimization Specifications for the Quasi-Newton Algorithm for
+Continuous Outcomes
+  Maximum number of iterations                                 100
+  Convergence criterion                                  0.100D-05
+Optimization Specifications for the EM Algorithm
+  Maximum number of iterations                                 500
+  Convergence criteria
+    Loglikelihood change                                 0.100D-02
+    Relative loglikelihood change                        0.100D-05
+    Derivative                                           0.100D-02
+Optimization Specifications for the M step of the EM Algorithm for
+Categorical Latent variables
+  Number of M step iterations                                    1
+  M step convergence criterion                           0.100D-02
+  Basis for M step termination                           ITERATION
+Optimization Specifications for the M step of the EM Algorithm for
+Censored, Binary or Ordered Categorical (Ordinal), Unordered
+Categorical (Nominal) and Count Outcomes
+  Number of M step iterations                                    1
+  M step convergence criterion                           0.100D-02
+  Basis for M step termination                           ITERATION
+  Maximum value for logit thresholds                            15
+  Minimum value for logit thresholds                           -15
+  Minimum expected cell size for chi-square              0.100D-01
+Optimization algorithm                                         EMA
+Integration Specifications
+  Type                                                    STANDARD
+  Number of integration points                                  15
+  Dimensions of numerical integration                            2
+  Adaptive quadrature                                           ON
+Cholesky                                                       OFF
+
+Input data file(s)
+  lmsfs_simdat_1.dat
+Input data format  FREE
+
+
+SAMPLE STATISTICS
+
+
+UNIVARIATE SAMPLE STATISTICS
+
+
+     UNIVARIATE HIGHER-ORDER MOMENT DESCRIPTIVE STATISTICS
+
+         Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
+        Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
+
+     FS_Y                  0.000      -0.121      -3.274    1.00%      -1.051     -0.314      0.074
+             100.000       1.331      -0.360       2.209    1.00%       0.267      0.880
+     FS_X                  0.000       0.042      -0.957   30.00%      -0.957     -0.600     -0.345
+             100.000       0.680      -1.745       1.066   20.00%       0.631      0.705
+     FS_M                  0.000      -0.183      -2.603    1.00%      -0.802     -0.040      0.129
+             100.000       0.900       0.677       2.833    1.00%       0.299      0.605
+     REL_FS_Y              1.331  **********       1.331  100.00%       1.331      1.331      1.331
+             100.000       0.000  **********       1.331  100.00%       1.331      1.331
+     REL_FS_M              0.900      -3.551       0.756    1.00%       0.893      0.902      0.906
+             100.000       0.001      14.352       0.924    1.00%       0.910      0.915
+     REL_FS_X              0.679       0.280       0.578   30.00%       0.578      0.580      0.661
+             100.000       0.011      -1.502       0.868    5.00%       0.742      0.776
+     EV_FS_Y              -0.440  **********      -0.440  100.00%      -0.440     -0.440     -0.440
+             100.000       0.000  **********      -0.440  100.00%      -0.440     -0.440
+     EV_FS_M               0.090       3.128       0.071    1.00%       0.078      0.082      0.085
+             100.000       0.000      11.439       0.184    1.00%       0.088      0.095
+     EV_FS_X               0.207      -0.708       0.115    5.00%       0.174      0.191      0.217
+             100.000       0.002      -0.530       0.244   30.00%       0.244      0.244
+
+
+
+     THE MODEL ESTIMATION DID NOT TERMINATE NORMALLY DUE TO AN ERROR IN THE
+     COMPUTATION.  CHANGE YOUR MODEL AND/OR STARTING VALUES.
+
+
+
+
+
+
+MODEL RESULTS
+
+                    Estimate
+
+ Y        BY
+    FS_Y             999.000
+
+ X        BY
+    FS_X             999.000
+
+ M        BY
+    FS_M             999.000
+
+ Y          ON
+    X                  0.000
+    M                  0.000
+    XM                 0.000
+
+ M        WITH
+    X                  0.000
+
+ Intercepts
+    FS_Y               0.000
+    FS_X               0.000
+    FS_M               0.000
+
+ Variances
+    X                  0.050
+    M                  0.050
+
+ Residual Variances
+    FS_Y             999.000
+    FS_X             999.000
+    FS_M             999.000
+    Y                  0.050
+
+New/Additional Parameters
+    STDX_B1            0.000
+    STDX_B2            0.000
+    STDX_B3            0.000
+
+
+MODEL COMMAND WITH FINAL ESTIMATES USED AS STARTING VALUES
+
+     xm | x XWITH m;
+
+     y BY fs_y*999 (ld_fsy);
+     x BY fs_x*999 (ld_fsx);
+     m BY fs_m*999 (ld_fsm);
+
+     y ON x*0 (b1);
+     y ON m*0 (b2);
+     y ON xm*0 (b3);
+
+     m WITH x*0;
+
+     [ fs_y*0.00000 ];
+     [ fs_x*0.00000 ];
+     [ fs_m*0.00000 ];
+
+     fs_y*999 (ev_fsy);
+     fs_x*999 (ev_fsx);
+     fs_m*999 (ev_fsm);
+     y*0.05000;
+     x*0.05000 (var_x);
+     m*0.05000 (var_m);
+
+     ! NEW statements in MODEL CONSTRAINT
+     NEW(stdx_b1*0);
+     NEW(stdx_b2*0);
+     NEW(stdx_b3*0);
+
+
+
+
+TECHNICAL 1 OUTPUT
+
+
+     PARAMETER SPECIFICATION
+
+
+           NU
+              FS_Y          FS_X          FS_M
+              ________      ________      ________
+                    1             2             3
+
+
+           LAMBDA
+              Y             X             M             XM
+              ________      ________      ________      ________
+ FS_Y               4             0             0             0
+ FS_X               0             5             0             0
+ FS_M               0             0             6             0
+
+
+           THETA
+              FS_Y          FS_X          FS_M
+              ________      ________      ________
+ FS_Y               7
+ FS_X               0             8
+ FS_M               0             0             9
+
+
+           ALPHA
+              Y             X             M             XM
+              ________      ________      ________      ________
+                    0             0             0             0
+
+
+           BETA
+              Y             X             M             XM
+              ________      ________      ________      ________
+ Y                  0            10            11            12
+ X                  0             0             0             0
+ M                  0             0             0             0
+ XM                 0             0             0             0
+
+
+           PSI
+              Y             X             M             XM
+              ________      ________      ________      ________
+ Y                 13
+ X                  0            14
+ M                  0            15            16
+ XM                 0             0             0             0
+
+
+     PARAMETER SPECIFICATION FOR THE ADDITIONAL PARAMETERS
+
+
+           NEW/ADDITIONAL PARAMETERS
+              STDX_B1       STDX_B2       STDX_B3
+              ________      ________      ________
+                   17            18            19
+
+
+     STARTING VALUES
+
+
+           NU
+              FS_Y          FS_X          FS_M
+              ________      ________      ________
+                0.000         0.000         0.000
+
+
+           LAMBDA
+              Y             X             M             XM
+              ________      ________      ________      ________
+ FS_Y           1.000         0.000         0.000         0.000
+ FS_X           0.000         1.000         0.000         0.000
+ FS_M           0.000         0.000         1.000         0.000
+
+
+           THETA
+              FS_Y          FS_X          FS_M
+              ________      ________      ________
+ FS_Y           0.665
+ FS_X           0.000         0.340
+ FS_M           0.000         0.000         0.450
+
+
+           ALPHA
+              Y             X             M             XM
+              ________      ________      ________      ________
+                0.000         0.000         0.000         0.000
+
+
+           BETA
+              Y             X             M             XM
+              ________      ________      ________      ________
+ Y              0.000         0.000         0.000         0.000
+ X              0.000         0.000         0.000         0.000
+ M              0.000         0.000         0.000         0.000
+ XM             0.000         0.000         0.000         0.000
+
+
+           PSI
+              Y             X             M             XM
+              ________      ________      ________      ________
+ Y              0.050
+ X              0.000         0.050
+ M              0.000         0.000         0.050
+ XM             0.000         0.000         0.000         0.000
+
+
+     STARTING VALUES FOR THE ADDITIONAL PARAMETERS
+
+
+           NEW/ADDITIONAL PARAMETERS
+              STDX_B1       STDX_B2       STDX_B3
+              ________      ________      ________
+                0.500         0.500         0.500
+
+
+RESULTS SAVING INFORMATION
+
+    Model estimation did not terminate normally.  No results were saved.
+
+     Beginning Time:  12:36:06
+        Ending Time:  12:36:06
+       Elapsed Time:  00:00:00
+
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2022 Muthen & Muthen

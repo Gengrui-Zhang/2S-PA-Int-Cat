@@ -1,9 +1,9 @@
-------Begin Mplus Model Run: 25Mar2025 04:32:13------
+------Begin Mplus Model Run: 15Apr2025 12:56:35------
 Run options:
 	Recursive (run models in subdirectories): FALSE
 	Show output on console: FALSE
 	Replace existing outfile: always
 ------
-Currently running model: lmsfs_2.inp
+Currently running model: 2spa_1.inp
 
-------End Mplus Model Run: 25Mar2025 04:32:51------
+------End Mplus Model Run: 15Apr2025 12:56:36------

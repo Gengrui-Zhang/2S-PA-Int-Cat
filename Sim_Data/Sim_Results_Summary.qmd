@@ -5,6 +5,7 @@ format:
     toc: true
     toc-title: "On this page"
     toc-location: left
+    embed-resources: true
 editor: visual
 ---
 

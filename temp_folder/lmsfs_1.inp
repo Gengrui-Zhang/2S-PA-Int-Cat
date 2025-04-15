@@ -1,0 +1,62 @@
+
+TITLE: LMS using factor scores
+
+DATA:
+  FILE = lmsfs_simdat_1.dat;
+  FORMAT IS FREE;              
+
+VARIABLE:
+  NAMES = fs_y rel_fs_y ev_fs_y
+          fs_x se_fs_x fs_m se_fs_m
+          ev_fs_m ev_fs_x rel_fs_m rel_fs_x 
+          ev_fs_xm ld_fs_xm fs_xm; 
+  USEVARIABLES = fs_y fs_x fs_m;  
+  CONSTRAINT = rel_fs_y rel_fs_m rel_fs_x 
+               ev_fs_y ev_fs_m ev_fs_x;
+
+ANALYSIS:
+        TYPE = RANDOM;
+        ALGORITHM = INTEGRATION;
+MODEL:  !outcome
+          Y BY fs_y*1 (ld_fsy);
+          fs_y* (ev_fsy);
+          
+          !predictor
+          X BY fs_x*1 (ld_fsx);
+          X (var_X);
+          fs_x* (ev_fsx);
+
+          !moderator
+          M BY fs_m*1 (ld_fsm);
+          M (var_M);
+          fs_m* (ev_fsm);
+
+          !interaction model
+          XM | X XWITH M;
+          
+          !structural model
+          Y ON X(b1); 
+          Y ON M(b2);
+          Y ON XM(b3);
+          
+  MODEL CONSTRAINT:
+          ld_fsy = rel_fs_y;
+          ev_fsy = ev_fs_y; 
+          ld_fsx = rel_fs_x;
+          ev_fsx = ev_fs_x;
+          ld_fsm = rel_fs_m;
+          ev_fsm = ev_fs_m;
+          
+          New(stdx_b1);
+          stdx_b1 = b1*sqrt(var_X);
+          New(stdx_b2);
+          stdx_b2 = b2*sqrt(var_M);
+          New(stdx_b3);
+          stdx_b3 = b3*sqrt(var_X)*sqrt(var_M);
+
+OUTPUT:
+  sampstat tech1 CINTERVAL;  
+  
+SAVEDATA:
+  RESULTS = lmsfs_results_1.dat;
+
