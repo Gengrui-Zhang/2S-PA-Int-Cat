@@ -2,7 +2,7 @@
 TITLE: Latent Moderated Structural (LMS) Model
 
 DATA:
-  FILE = lms_simdat_1.dat;  
+  FILE = lms_simdat_2.dat;  
   FORMAT IS FREE;              
 
 VARIABLE:
@@ -40,5 +40,5 @@ OUTPUT:
   sampstat standardized tech1 CINTERVAL;  
   
 SAVEDATA:
-  RESULTS = lms_results_1.dat;
+  RESULTS = lms_results_2.dat;
 

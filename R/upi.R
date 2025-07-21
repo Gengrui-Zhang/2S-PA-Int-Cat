@@ -125,7 +125,7 @@ upi <- function (model, data, mode = "match", ...) {
   }
   while (pairs_count > 0) {
     interim_data <- indprod_data(data,
-                                 pairs[[pairs_count]],
+                                 inter_pair = pairs[[pairs_count]],
                                  indicators = indics,
                                  mode = mode)
     # Mean-center first-order indicators

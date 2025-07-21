@@ -19,9 +19,8 @@ lapply(r_scripts, source)
 # ========================================= Simulation Conditions ========================================= #
 
 DESIGNFACTOR <- createDesign(
-  N = c(100, 250, 500),
-  # num_cat = c(3, 5),
-  rel = 0.8,
+  N = c(100, 250, 500, 2000),
+  rel = c(0.7, 0.8, 0.9),
   gamma_xm = c(0, 0.3), # Two levels of the interaction effect
   skewness = c("symm", "skew")
 )
@@ -39,40 +38,210 @@ FIXED <- list(gamma_x = 0.3,
 # Temporary directory
 FIXED$temp_session <- "/Users/jimmy_z/R Projects/2S-PA-Int-Cat/temp_folder"
 
-# UPI syntax
-FIXED$upi_syntax <- "
-  # Measurement Model
-    Y =~ y1 + y2 + y3
-    X =~ x1 + x2 + x3
-    M =~ m1 + m2 + m3 + m4 + m5 + m6 + 
-         m7 + m8 + m9 + m10 + m11 + m12 
-  # Structural Model
-    Y ~ b1*X + b2*M + b3*X:M
-  # Define Standardized Coefficients
-    X ~~ v1*X
-    M ~~ v2*M
-  # Covariance
-    IM ~~ cov_12*EM
-    IM ~~ cov_13*Int
-    EM ~~ cov_23*Int
-  # Disturbance
-    Y ~~ dist_y*Y
-    var_y :=  dist_y + (b1^2 * v1 + b2^2 * v2 + b3^2 * v3 + 
-                        2 * b1 * b2 * cov_12 + 
-                        2 * b1 * b3 * cov_13 + 
-                        2 * b2 * b3 * cov_23)
-  # Standardized coefficients
-    beta1 := b1*sqrt(v1)/sqrt(var_y)
-    beta2 := b2*sqrt(v2)/sqrt(var_y)
-    beta3 := b3*sqrt(v1)*sqrt(v2)/sqrt(var_y)
+# All-pair UPI syntax
+FIXED$allupi_syntax <- "
+  TITLE: All-pair Unconstrained Product Indicator
+
+  DATA:
+    FILE = allupi_simdat_repid.dat;  
+    FORMAT IS FREE;              
+  
+  VARIABLE:
+    NAMES = x1 x2 x3 
+    	    m1 m2 m3 m4 m5 m6 
+    	    m7 m8 m9 m10 m11 m12 
+    	    y1 y2 y3
+    	    x1m1 x1m2 x1m3 x1m4 x1m5 x1m6 
+    	    x1m7 x1m8 x1m9 x1m10 x1m11 x1m12 
+    	    x2m1 x2m2 x2m3 x2m4 x2m5 x2m6 
+    	    x2m7 x2m8 x2m9 x2m10 x2m11 x2m12 
+    	    x3m1 x3m2 x3m3 x3m4 x3m5 x3m6 
+    	    x3m7 x3m8 x3m9 x3m10 x3m11 x3m12;
+    USEVARIABLES = x1-x3m12;
+          
+  ANALYSIS:
+    TYPE = general;
+    ESTIMATOR = MLR;
+  MODEL:
+    !measurement model
+    X BY x3 x2 x1;  
+    X (var_X);
+    M BY m12 m11 m10 m9 m8 m7 m6 m5 m4 m3 m2 m1;  
+    M (var_M);
+    Y BY y3 y2 y1;  
+    Y (resvar_Y);
+    XM BY x3m12 x3m11 x3m10 x3m9 x3m8 x3m7 x3m6 x3m5 x3m4 x3m3 x3m2 x3m1
+         x2m12 x2m11 x2m10 x2m9 x2m8 x2m7 x2m6 x2m5 x2m4 x2m3 x2m2 x2m1
+         x1m12 x1m11 x1m10 x1m9 x1m8 x1m7 x1m6 x1m5 x1m4 x1m3 x1m2 x1m1;
+    XM (var_XM);
+  
+    !covariances between predictors
+    X WITH M (cov_XM);
+    X WITH XM (cov_XXM);
+    M WITH XM (cov_MXM);
+  
+    !structural model
+    Y ON X (b1); 
+    Y ON M (b2);
+    Y ON XM (b3);
+            
+  MODEL CONSTRAINT:
+            
+    NEW(var_Y std_b1 std_b2 std_b3);  
+    var_Y = resvar_Y + 
+     (b1^2 * var_X + 
+      b2^2 * var_M + 
+      b3^2 * var_XM + 
+      2 * b1 * b2 * cov_XM + 
+      2 * b1 * b3 * cov_XXM + 
+      2 * b2 * b3 * cov_MXM);
+      
+      std_b1 = b1 * sqrt(var_X) / sqrt(var_Y);
+      std_b2 = b2 * sqrt(var_M) / sqrt(var_Y);
+      std_b3 = b3 * sqrt(var_X) * sqrt(var_M) / sqrt(var_Y);
+  
+  OUTPUT:
+    sampstat tech1 CINTERVAL;  
+    
+  SAVEDATA:
+    RESULTS = allupi_results_repid.dat;
+"
+
+# Matched-pair UPI syntax
+FIXED$matchupi_syntax <- "
+  TITLE: Matched-pair Unconstrained Product Indicator
+
+  DATA:
+    FILE = matchupi_simdat_repid.dat;  
+    FORMAT IS FREE;              
+  
+  VARIABLE:
+    NAMES = x1 x2 x3 
+    	    m1 m2 m3 m4 m5 m6 
+    	    m7 m8 m9 m10 m11 m12 
+    	    y1 y2 y3
+    	    x1m10 x2m11 x3m12;
+    USEVARIABLES = x1-x3m12;
+          
+  ANALYSIS:
+    TYPE = general;
+    ESTIMATOR = MLR;
+  MODEL:
+    !measurement model
+    X BY x3 x2 x1;  
+    X (var_X);
+    M BY m12 m11 m10 m9 m8 m7 m6 m5 m4 m3 m2 m1;  
+    M (var_M);
+    Y BY y3 y2 y1;  
+    Y (resvar_Y);
+    XM BY x3m12 x2m11 x1m10; 
+    XM (var_XM);
+  
+    !covariances between predictors
+    X WITH M (cov_XM);
+    X WITH XM (cov_XXM);
+    M WITH XM (cov_MXM);
+  
+    !structural model
+    Y ON X (b1); 
+    Y ON M (b2);
+    Y ON XM (b3);
+            
+  MODEL CONSTRAINT:
+            
+    NEW(var_Y std_b1 std_b2 std_b3);  
+    var_Y = resvar_Y + 
+     (b1^2 * var_X + 
+      b2^2 * var_M + 
+      b3^2 * var_XM + 
+      2 * b1 * b2 * cov_XM + 
+      2 * b1 * b3 * cov_XXM + 
+      2 * b2 * b3 * cov_MXM);
+      
+      std_b1 = b1 * sqrt(var_X) / sqrt(var_Y);
+      std_b2 = b2 * sqrt(var_M) / sqrt(var_Y);
+      std_b3 = b3 * sqrt(var_X) * sqrt(var_M) / sqrt(var_Y);
+  
+  OUTPUT:
+    sampstat tech1 CINTERVAL;  
+    
+  SAVEDATA:
+    RESULTS = matchupi_results_repid.dat;
+"
+
+# Parceling UPI syntax
+FIXED$parcelupi_syntax <- "
+  TITLE: Parceling Unconstrained Product Indicator
+
+  DATA:
+    FILE = parcelupi_simdat_repid.dat;  
+    FORMAT IS FREE;              
+  
+  VARIABLE:
+    NAMES = x1 x2 x3 
+    	    m1 m2 m3 m4 m5 m6 
+    	    m7 m8 m9 m10 m11 m12 
+    	    y1 y2 y3
+    	    p1 p2 p3
+    	    x3p1 x2p2 x1p3;
+    USEVARIABLES = x1 x2 x3 
+    	    m1 m2 m3 m4 m5 m6 
+    	    m7 m8 m9 m10 m11 m12 
+    	    y1 y2 y3
+    	    x3p1 x2p2 x1p3;
+          
+  ANALYSIS:
+    TYPE = general;
+    ESTIMATOR = MLR;
+  MODEL:
+    !measurement model
+    X BY x3 x2 x1;  
+    X (var_X);
+    M BY m12 m11 m10 m9 m8 m7 m6 m5 m4 m3 m2 m1;  
+    M (var_M);
+    Y BY y3 y2 y1;  
+    Y (resvar_Y);
+    XM BY x3p1 x2p2 x1p3; 
+    XM (var_XM);
+  
+    !covariances between predictors
+    X WITH M (cov_XM);
+    X WITH XM (cov_XXM);
+    M WITH XM (cov_MXM);
+  
+    !structural model
+    Y ON X (b1); 
+    Y ON M (b2);
+    Y ON XM (b3);
+            
+  MODEL CONSTRAINT:
+            
+    NEW(var_Y std_b1 std_b2 std_b3);  
+    var_Y = resvar_Y + 
+     (b1^2 * var_X + 
+      b2^2 * var_M + 
+      b3^2 * var_XM + 
+      2 * b1 * b2 * cov_XM + 
+      2 * b1 * b3 * cov_XXM + 
+      2 * b2 * b3 * cov_MXM);
+      
+      std_b1 = b1 * sqrt(var_X) / sqrt(var_Y);
+      std_b2 = b2 * sqrt(var_M) / sqrt(var_Y);
+      std_b3 = b3 * sqrt(var_X) * sqrt(var_M) / sqrt(var_Y);
+  
+  OUTPUT:
+    sampstat tech1 CINTERVAL;  
+    
+  SAVEDATA:
+    RESULTS = parcelupi_results_repid.dat;
 "
 
 # LMS syntax
-FIXED$lms_syntax <- "
+FIXED$lmscat_syntax <- "
 TITLE: Latent Moderated Structural (LMS) Model
 
 DATA:
-  FILE = lms_simdat_repid.dat;  
+  FILE = lmscat_simdat_repid.dat;  
   FORMAT IS FREE;              
 
 VARIABLE:
@@ -83,7 +252,7 @@ VARIABLE:
   USEVARIABLES = x1 x2 x3 
   		    m1 m2 m3 m4 m5 m6 
   		    m7 m8 m9 m10 m11 m12 
-                 y1 y2 y3;  
+          y1 y2 y3;  
   MISSING = ALL (-999);  
   CATEGORICAL = x1 x2 x3 m1 m2 m3 m4 m5 m6 m7 m8 m9 m10 m11 m12; 
 
@@ -110,7 +279,7 @@ OUTPUT:
   sampstat standardized tech1 CINTERVAL;  
   
 SAVEDATA:
-  RESULTS = lms_results_repid.dat;
+  RESULTS = lmscat_results_repid.dat;
 "
 
 # 2S-PA Syntax
@@ -211,46 +380,31 @@ VARIABLE:
 
 ANALYSIS:
         TYPE = RANDOM;
+        ESTIMATOR = MLR;
         ALGORITHM = INTEGRATION;
+        
 MODEL:  !outcome
           Y BY fs_y*1 (ld_fsy);
           fs_y* (ev_fsy);
           
           !predictor
           X BY fs_x*1 (ld_fsx);
-          X (var_X);
           fs_x* (ev_fsx);
 
           !moderator
           M BY fs_m*1 (ld_fsm);
-          M (var_M);
           fs_m* (ev_fsm);
 
-          !interaction model
+          !interaction
           XM | X XWITH M;
           
-          !structural model
-          Y ON X(b1); 
-          Y ON M(b2);
-          Y ON XM(b3);
-          
-  MODEL CONSTRAINT:
-          ld_fsy = rel_fs_y;
-          ev_fsy = ev_fs_y; 
-          ld_fsx = rel_fs_x;
-          ev_fsx = ev_fs_x;
-          ld_fsm = rel_fs_m;
-          ev_fsm = ev_fs_m;
-          
-          New(stdx_b1);
-          stdx_b1 = b1*sqrt(var_X);
-          New(stdx_b2);
-          stdx_b2 = b2*sqrt(var_M);
-          New(stdx_b3);
-          stdx_b3 = b3*sqrt(var_X)*sqrt(var_M);
+          !structural
+          Y ON X M XM;   
+  
+          X WITH M;
 
 OUTPUT:
-  sampstat tech1 CINTERVAL;  
+  sampstat standardized tech1 CINTERVAL;  
   
 SAVEDATA:
   RESULTS = lmsfs_results_repid.dat;
@@ -299,28 +453,46 @@ generate_dat <- function(condition, fixed_objects = NULL) {
   eta <- cbind(eta, eta[, 1] * eta[, 2]) # Add latent interaction term
   etay <- y_int + eta[, -3] %*% c(gamma_x, gamma_m, gamma_xm) + eta[, 3] # Generate latent outcome variable
   
-  # Check if the latent variables are simulated correctly 
-  # lm(etay ~ eta[, -3])
-  
   # Generate outcome variables: y1, y2, y3
   Y <- t(lambda_y %*% t(etay) + matrix(rnorm(N * length(lambda_y), 
                                            sd = rep(sqrt(1 - lambda_y^2), each = N)),
                                      nrow = length(lambda_y), ncol = N))
   
   # Generate measurement indicators (latent)
+  # Factor loadings
   lambda_x = 1.7*seq(0.6, 0.8, length.out = num_eta1_ind)  # on normal ogive metric
   lambda_m = 1.7*seq(0.3, 0.85, length.out = num_eta2_ind)  # on normal ogive metric
-  # Set error variance of continuous indicators to 1 
-  # err_var_x <- sum(lambda_x)^2*(1 - rel)/rel*seq(0.8, 0.2, length.out = num_eta1_ind)
-  # err_var_x <- err_var_x/sum(err_var_x)
-  # err_var_m <- sum(lambda_m)^2*(1 - rel)/rel*seq(0.8, 0.2, length.out = num_eta2_ind)
-  # err_var_m <- err_var_m/sum(err_var_m)
-  x_lat <- eta[, 1] %*% t(lambda_x) + matrix(rnorm(N * length(lambda_x), 
-                                                   sd = 1), # sd = 1
-                                             nrow = N, ncol = length(lambda_x))
-  m_lat <- eta[, 2] %*% t(lambda_m) + matrix(rnorm(N * length(lambda_m), 
-                                                   sd = 1),
-                                             nrow = N, ncol = length(lambda_m))
+  
+  # Error variances
+  assign_err_var <- function(lambda, rel, weights = NULL) {
+    if (is.null(weights)) {
+      weights <- rep(1, length(lambda))
+    }
+    weights <- weights / sum(weights)
+    sum_lambda <- sum(lambda)
+    numerator <- sum_lambda^2
+    total_error <- numerator * (1 - rel) / rel
+    err_var <- weights * total_error
+    # Check
+    composite_rel <- numerator / (numerator + sum(err_var))
+    cat("Composite reliability: ", round(composite_rel, 5), "\n")
+    return(err_var)
+  }
+  
+  err_var_x <- assign_err_var(lambda_x, rel, seq(0.8, 0.2, length.out = length(lambda_x)))
+  err_var_m <- assign_err_var(lambda_m, rel, seq(0.8, 0.2, length.out = length(lambda_m)))
+  
+  # Simulate latent x and m indicators
+  # X items:
+  x_lat <- matrix(NA, nrow = N, ncol = length(lambda_x))
+  for (i in 1:length(lambda_x)) {
+    x_lat[, i] <- eta[, 1] * lambda_x[i] + rnorm(N, sd = sqrt(err_var_x[i]))
+  }
+  # M items:
+  m_lat <- matrix(NA, nrow = N, ncol = length(lambda_m))
+  for (i in 1:length(lambda_m)) {
+    m_lat[, i] <- eta[, 2] * lambda_m[i] + rnorm(N, sd = sqrt(err_var_m[i]))
+  }
   
   # Check if simulated continuous items are correctly parameterized
   # test_df <- cbind(x_lat, m_lat, Y)
@@ -360,7 +532,11 @@ generate_dat <- function(condition, fixed_objects = NULL) {
                      "y1", "y2", "y3")
   
   # Return data
-  return(dat)
+  return(list(
+    dat = dat,
+    lambda_x = lambda_x,
+    lambda_m = lambda_m
+  ))
 }
 
 # Test df
@@ -478,29 +654,222 @@ generate_fsdat <- function (dat) {
 #   return(out)
 # }
 
-analyze_upi <- function (condition, dat, fixed_objects = NULL) {
+analyze_allupi <- function (condition, dat, fixed_objects = NULL) {
   
-  fit_upi <- upi(model = fixed_objects$upi_syntax, 
-                 data = dat, 
-                 mode = "all",
-                 ordered = c("x1", "x2", "x3", "m1", "m2", "m3",
-                             "m4", "m5", "m6", "m7", "m8", "m9",
-                             "m10", "m11", "m12")) 
-  param_upi <- parameterEstimates(fit_upi)
+  # read data
+  df <- dat$dat
   
-  # Extract parameters
-  est_ust <- param_upi %>% 
-    filter(label %in% c("b1", "b2", "b3")) %>% 
-    pull(est)
-  se_ust <- param_upi %>% 
-    filter(label %in% c("b1", "b2", "b3")) %>% 
-    pull(se)
-  est_std <- param_upi %>% 
-    filter(label %in% c("stdx_b1", "stdx_b2", "stdx_b3")) %>% 
-    pull(est)
-  se_std <- param_upi %>% 
-    filter(label %in% c("stdx_b1", "stdx_b2", "stdx_b3")) %>% 
-    pull(se)
+  # Product indicators
+  pi_x <- c("x1", "x2", "x3")
+  pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
+            "m7", "m8", "m9", "m10", "m11", "m12")
+  pi_xm <- as.vector(t(outer(pi_x, pi_m, paste0)))
+  
+  df_c <- df %>%
+    mutate(across(c(pi_x, pi_m), ~ . - mean(.)))
+  
+  pi_df <- indProd(df_c, 
+                    var1 = pi_x,
+                    var2 = pi_m,
+                    match = FALSE, 
+                    meanC = T, 
+                    residualC = F, 
+                    doubleMC = T,
+                    namesProd = pi_xm) # using the DMC strategy
+  
+  # Run Mplus model
+  temp_session <- fixed_objects$temp_session
+  df_name <- file.path(temp_session,
+                        sprintf("allupi_simdat_%s.dat", condition$REPLICATION))
+  write.table(pi_df,
+              file = df_name,
+              row.names = FALSE, col.names = FALSE, quote = FALSE
+  )
+  mplus_files <- sprintf(
+    c("allupi_simdat_%s.dat", "allupi_%s.inp", "allupi_%s.out", "allupi_results_%s.dat"),
+    condition$REPLICATION
+  )
+  writeLines(gsub("repid", replacement = condition$REPLICATION,
+                  x = fixed_objects$allupi_syntax),
+             con = file.path(temp_session, mplus_files[[2]]))
+  MplusAutomation::runModels(
+    temp_session,
+    filefilter = mplus_files[[2]],
+    #Mplus_command = "/opt/mplus/8.7/mplus",
+    Mplus_command = "/Applications/Mplus/mplus")
+  
+  # Extract results
+  # Read lines
+  res_allupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  # Extract Parameters
+  est_ust <- res_allupi[159:161]
+  se_ust <- res_allupi[331:333]
+  est_std <- res_allupi[170:172]
+  se_std <- res_allupi[342:344]
+  
+  # Create the output vector
+  out <- c(est_ust, se_ust, est_std, se_std)  
+  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                  "x_se_ust", "m_se_ust", "xm_se_ust", 
+                  "x_est_std", "m_est_std", "xm_est_std",
+                  "x_se_std", "m_se_std", "xm_se_std")
+  
+  # Return
+  return(out)
+}
+
+analyze_matchupi <- function (condition, dat, fixed_objects = NULL) {
+  
+  # read data
+  df <- dat$dat
+  lambda_x <- dat$lambda_x
+  lambda_m <- dat$lambda_m
+  pi_x <- c("x1", "x2", "x3")
+  pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
+            "m7", "m8", "m9", "m10", "m11", "m12")
+
+  # Order indicators by reliability
+  rel_x <- lambda_x^2 / (lambda_x^2 + 1) # Error variances constrained to 1
+  rel_m <- lambda_m^2 / (lambda_m^2 + 1) # Error variances constrained to 1
+  
+  # Find the 3 most reliable items in each set
+  top_x <- order(rel_x, decreasing = TRUE)[1:3]
+  top_m <- order(rel_m, decreasing = TRUE)[1:3]
+  selected_x <- pi_x[top_x]
+  selected_m <- pi_m[top_m]
+
+  # Form PIs
+  df_c <- df %>%
+    mutate(across(c(pi_x, pi_m), ~ . - mean(.)))
+  pi_xm <- paste0(selected_x, selected_m)
+  
+  pi_df <- indProd(df_c, 
+                    var1 = selected_x,
+                    var2 = selected_m,
+                    match = TRUE, 
+                    meanC = T, 
+                    residualC = F, 
+                    doubleMC = T,
+                    namesProd = pi_xm) # using the DMC strategy
+  
+  # Run Mplus model
+  temp_session <- fixed_objects$temp_session
+  df_name <- file.path(temp_session,
+                        sprintf("matchupi_simdat_%s.dat", condition$REPLICATION))
+  write.table(pi_df,
+              file = df_name,
+              row.names = FALSE, col.names = FALSE, quote = FALSE
+  )
+  mplus_files <- sprintf(
+    c("matchupi_simdat_%s.dat", "matchupi_%s.inp", "matchupi_%s.out", "matchupi_results_%s.dat"),
+    condition$REPLICATION
+  )
+  writeLines(gsub("repid", replacement = condition$REPLICATION,
+                  x = fixed_objects$matchupi_syntax),
+             con = file.path(temp_session, mplus_files[[2]]))
+  MplusAutomation::runModels(
+    temp_session,
+    filefilter = mplus_files[[2]],
+    #Mplus_command = "/opt/mplus/8.7/mplus",
+    Mplus_command = "/Applications/Mplus/mplus")
+  
+  # Extract results
+  # Read lines
+  res_matchupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  # Extract Parameters
+  est_ust <- res_matchupi[60:62]
+  se_ust <- res_matchupi[133:135]
+  est_std <- res_matchupi[71:73]
+  se_std <- res_matchupi[144:146]
+  
+  # Create the output vector
+  out <- c(est_ust, se_ust, est_std, se_std)  
+  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                  "x_se_ust", "m_se_ust", "xm_se_ust", 
+                  "x_est_std", "m_est_std", "xm_est_std",
+                  "x_se_std", "m_se_std", "xm_se_std")
+  
+  # Return
+  return(out)
+}
+
+analyze_parcelupi <- function (condition, dat, fixed_objects = NULL) {
+  
+  # read data
+  df <- dat$dat
+  lambda_x <- dat$lambda_x
+  lambda_m <- dat$lambda_m
+  pi_x <- c("x1", "x2", "x3")
+  pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
+            "m7", "m8", "m9", "m10", "m11", "m12")
+  m_names <- paste0("m", 1:length(lambda_m))
+  
+  # Mean-centering
+  df_c <- df %>%
+    mutate(across(c(pi_x, pi_m), ~ . - mean(.)))
+  
+  # Order indicators by reliability
+  rel_m <- lambda_m^2 / (lambda_m^2 + 1)
+  order_m <- order(rel_m, decreasing = TRUE)
+  m_ordered <- m_names[order_m]
+  # order by factorial algorithm
+  parcel_assign <- list(
+    p1 = c(m_ordered[1], m_ordered[12], m_ordered[4], m_ordered[9]),
+    p2 = c(m_ordered[2], m_ordered[11], m_ordered[5], m_ordered[8]),
+    p3 = c(m_ordered[3], m_ordered[10], m_ordered[6], m_ordered[7])
+  )
+  
+  # Create parcel items
+  df_c$p1 <- rowMeans(df_c[, parcel_assign$p1])
+  df_c$p2 <- rowMeans(df_c[, parcel_assign$p2])
+  df_c$p3 <- rowMeans(df_c[, parcel_assign$p3])
+  
+  # Find the 3 most reliable items x
+  rel_x <- lambda_x^2 / (lambda_x^2 + 1) # Error variances constrained to 1
+  top_x <- order(rel_x, decreasing = TRUE)[1:3]
+  selected_x <- pi_x[top_x]
+  
+  # Form PIs
+  pi_xm <- paste0(selected_x, names(parcel_assign))
+
+  pi_df <- indProd(df_c, 
+                   var1 = selected_x,
+                   var2 = names(parcel_assign),
+                   match = TRUE, 
+                   meanC = T, 
+                   residualC = F, 
+                   doubleMC = T,
+                   namesProd = pi_xm) # using the DMC strategy
+  
+  # Run Mplus model
+  temp_session <- fixed_objects$temp_session
+  df_name <- file.path(temp_session,
+                       sprintf("parcelupi_simdat_%s.dat", condition$REPLICATION))
+  write.table(pi_df,
+              file = df_name,
+              row.names = FALSE, col.names = FALSE, quote = FALSE
+  )
+  mplus_files <- sprintf(
+    c("parcelupi_simdat_%s.dat", "parcelupi_%s.inp", "parcelupi_%s.out", "parcelupi_results_%s.dat"),
+    condition$REPLICATION
+  )
+  writeLines(gsub("repid", replacement = condition$REPLICATION,
+                  x = fixed_objects$parcelupi_syntax),
+             con = file.path(temp_session, mplus_files[[2]]))
+  MplusAutomation::runModels(
+    temp_session,
+    filefilter = mplus_files[[2]],
+    #Mplus_command = "/opt/mplus/8.7/mplus",
+    Mplus_command = "/Applications/Mplus/mplus")
+  
+  # Extract results
+  # Read lines
+  res_parcelupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  # Extract Parameters
+  est_ust <- res_parcelupi[60:62]
+  se_ust <- res_parcelupi[133:135]
+  est_std <- res_parcelupi[71:73]
+  se_std <- res_parcelupi[144:146]
   
   # Create the output vector
   out <- c(est_ust, se_ust, est_std, se_std)  
@@ -515,14 +884,17 @@ analyze_upi <- function (condition, dat, fixed_objects = NULL) {
 
 analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
   
-  fs_dat <- generate_fsdat(dat)
+  # read data
+  df <- dat$dat
+  
+  fs_df <- generate_fsdat(df)
   
   # Run Mplus model
   temp_session <- fixed_objects$temp_session
-  dat_name <- file.path(temp_session,
+  df_name <- file.path(temp_session,
                         sprintf("2spa_simdat_%s.dat", condition$REPLICATION))
-  write.table(fs_dat,
-              file = dat_name,
+  write.table(fs_df,
+              file = df_name,
               row.names = FALSE, col.names = FALSE, quote = FALSE
   )
   mplus_files <- sprintf(
@@ -563,21 +935,24 @@ analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
   return(out)
 }
 
-analyze_lms <- function (condition, dat, fixed_objects = NULL) {
+analyze_lmscat <- function (condition, dat, fixed_objects = NULL) {
 
+  # read data
+  df <- dat$dat
+  
   temp_session <- fixed_objects$temp_session
-  dat_name <- file.path(temp_session,
-                        sprintf("lms_simdat_%s.dat", condition$REPLICATION))
-  write.table(dat,
-              file = dat_name,
+  df_name <- file.path(temp_session,
+                        sprintf("lmscat_simdat_%s.dat", condition$REPLICATION))
+  write.table(df,
+              file = df_name,
               row.names = FALSE, col.names = FALSE, quote = FALSE
   )
   mplus_files <- sprintf(
-    c("lms_simdat_%s.dat", "lms_%s.inp", "lms_%s.out", "lms_results_%s.dat"),
+    c("lmscat_simdat_%s.dat", "lmscat_%s.inp", "lmscat_%s.out", "lmscat_results_%s.dat"),
     condition$REPLICATION
   )
   writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$lms_syntax),
+                  x = fixed_objects$lmscat_syntax),
              con = file.path(temp_session, mplus_files[[2]]))
   MplusAutomation::runModels(
     temp_session,
@@ -587,13 +962,13 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
   
   # Extract results
   # Read lines
-  res_lms <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+  res_lmscat <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
   # readLines(file.path(temp_session, mplus_files[[3]]))
   
-  est_ust <- res_lms[25:27]
-  se_ust <- res_lms[105:107]
-  est_std <- res_lms[185:187]
-  se_std <- res_lms[265:267]
+  est_ust <- res_lmscat[25:27]
+  se_ust <- res_lmscat[104:106]
+  est_std <- res_lmscat[183:185]
+  se_std <- res_lmscat[262:264]
   
   # Create the output vector
   out <- c(est_ust, se_ust, est_std, se_std)  
@@ -609,53 +984,56 @@ analyze_lms <- function (condition, dat, fixed_objects = NULL) {
   return(out)
 }
 
-analyze_lmsfs <- function (condition, dat, fixed_objects = NULL) {
-  
-  fs_dat <- generate_fsdat(dat)
-  
-  temp_session <- fixed_objects$temp_session
-  dat_name <- file.path(temp_session,
-                        sprintf("lmsfs_simdat_%s.dat", condition$REPLICATION))
-  write.table(fs_dat,
-              file = dat_name,
-              row.names = FALSE, col.names = FALSE, quote = FALSE
-  )
-  mplus_files <- sprintf(
-    c("lmsfs_simdat_%s.dat", "lmsfs_%s.inp", "lmsfs_%s.out", "lmsfs_results_%s.dat"),
-    condition$REPLICATION
-  )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$lmsfs_syntax),
-             con = file.path(temp_session, mplus_files[[2]]))
-  MplusAutomation::runModels(
-    temp_session,
-    filefilter = mplus_files[[2]],
-    #Mplus_command = "/opt/mplus/8.7/mplus",
-    Mplus_command = "/Applications/Mplus/mplus")
-  
-  # Extract results
-  # Read lines
-  res_lmsfs <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
-  # readLines(file.path(temp_session, mplus_files[[3]]))
-  
-  est_ust <- res_lmsfs[10:12]
-  se_ust <- res_lmsfs[29:31]
-  est_std <- res_lmsfs[17:19]
-  se_std <- res_lmsfs[36:38]
-  
-  # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std)  
-  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
-                  "x_se_ust", "m_se_ust", "xm_se_ust", 
-                  "x_est_std", "m_est_std", "xm_est_std",
-                  "x_se_std", "m_se_std", "xm_se_std")
-  
-  # Remove temp files
-  file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
-  
-  # Return
-  return(out)
-}
+# analyze_lmsfs <- function (condition, dat, fixed_objects = NULL) {
+#   
+#   # read data
+#   df <- dat$dat
+#   
+#   fs_df <- generate_fsdat(df)
+#   
+#   temp_session <- fixed_objects$temp_session
+#   df_name <- file.path(temp_session,
+#                         sprintf("lmsfs_simdat_%s.dat", condition$REPLICATION))
+#   write.table(fs_df,
+#               file = df_name,
+#               row.names = FALSE, col.names = FALSE, quote = FALSE
+#   )
+#   mplus_files <- sprintf(
+#     c("lmsfs_simdat_%s.dat", "lmsfs_%s.inp", "lmsfs_%s.out", "lmsfs_results_%s.dat"),
+#     condition$REPLICATION
+#   )
+#   writeLines(gsub("repid", replacement = condition$REPLICATION,
+#                   x = fixed_objects$lmsfs_syntax),
+#              con = file.path(temp_session, mplus_files[[2]]))
+#   MplusAutomation::runModels(
+#     temp_session,
+#     filefilter = mplus_files[[2]],
+#     #Mplus_command = "/opt/mplus/8.7/mplus",
+#     Mplus_command = "/Applications/Mplus/mplus")
+#   
+#   # Extract results
+#   # Read lines
+#   res_lmsfs <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+#   # readLines(file.path(temp_session, mplus_files[[3]]))
+#   
+#   est_ust <- res_lmsfs[10:12]
+#   se_ust <- res_lmsfs[29:31]
+#   est_std <- res_lmsfs[17:19]
+#   se_std <- res_lmsfs[36:38]
+#   
+#   # Create the output vector
+#   out <- c(est_ust, se_ust, est_std, se_std)  
+#   names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+#                   "x_se_ust", "m_se_ust", "xm_se_ust", 
+#                   "x_est_std", "m_est_std", "xm_est_std",
+#                   "x_se_std", "m_se_std", "xm_se_std")
+#   
+#   # Remove temp files
+#   file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
+#   
+#   # Return
+#   return(out)
+# }
 
 # ========================================= Results Summary ========================================= #
 # Helper function: robust bias
@@ -814,20 +1192,21 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 #               packages = "lavaan",
 #               parallel = TRUE,
 #               ncores = 30)
-
+SimClean()
 runSimulation(design = DESIGNFACTOR,
-              replications = 2000,
+              replications = 3,
               generate = generate_dat,
-              analyse = list(upi = analyze_upi,
+              analyse = list(allupi = analyze_allupi,
+                             matchupi = analyze_matchupi,
+                             parcelupi = analyze_parcelupi,
                              tspa = analyze_2spamplus,
-                             lms = analyze_lms,
-                             lmsfs = analyze_lmsfs),
+                             lmscat = analyze_lmscat),
               summarise = evaluate_res,
               fixed_objects = FIXED,
               seed = rep(61543, nrow(DESIGNFACTOR)),
               control = list(include_reps = TRUE),
               packages = "lavaan", 
-              filename = "categorical_03252025",
+              filename = "categorical_07202025",
               parallel = TRUE,
               ncores = 30,
               save = TRUE,

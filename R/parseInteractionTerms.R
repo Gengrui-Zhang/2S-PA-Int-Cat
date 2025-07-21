@@ -8,21 +8,25 @@
 #' @export
 
 parseInteractionTerms <- function(model) {
-  str_elements <- gsub(" ", "",
-                       unlist(strsplit(unlist(strsplit(model, split = "\n|=~|~")),
-                                       split = "+", fixed = TRUE)))
-  inter_terms <- gsub("\n", "", str_elements[intersect(grep(":", str_elements), grep(":=", str_elements, invert = T))])
-
-  if (grepl("*", inter_terms, fixed = TRUE)) {
-    int_label <- unlist(strsplit(inter_terms, split = "\\*"))[1]
-    inter_terms <- as.list(unlist(strsplit(inter_terms, split = "\\*"))[2])
+  lines <- unlist(strsplit(model, "\n"))
+  lines <- lines[!grepl(":=", lines)]
+  inter_lines <- grep(":", lines, value = TRUE)
+  inter_lines <- inter_lines[grepl("~", inter_lines)]
+  inter_terms <- c()
+  for (line in inter_lines) {
+    clean_line <- gsub(" ", "", line)
+    rhs <- unlist(strsplit(clean_line, "~"))[2]
+    rhs_terms <- unlist(strsplit(rhs, "\\+"))
+    inters <- rhs_terms[grepl(":", rhs_terms)]
+    inters <- gsub("^[^*]*\\*", "", inters)
+    inter_terms <- c(inter_terms, inters)
   }
-
+  inter_terms <- unique(inter_terms)
   interpairs <- function (inter_terms) {
     inter_vars <- list()
-    for (i in seq(inter_terms)) {
-      terms <- strsplit(inter_terms[[i]], split = ":")
-      inter_vars[[i]] <- unlist(terms)
+    for (i in seq_along(inter_terms)) {
+      vars <- unlist(strsplit(inter_terms[i], ":"))
+      inter_vars[[i]] <- vars
       names(inter_vars)[i] <- paste0("inter_pair_", i)
     }
     return(inter_vars)
