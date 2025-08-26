@@ -1194,7 +1194,7 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
 #               ncores = 30)
 SimClean()
 runSimulation(design = DESIGNFACTOR,
-              replications = 3,
+              replications = 2000,
               generate = generate_dat,
               analyse = list(allupi = analyze_allupi,
                              matchupi = analyze_matchupi,

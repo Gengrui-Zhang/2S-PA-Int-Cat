@@ -1,0 +1,67 @@
+
+  TITLE: All-pair Unconstrained Product Indicator
+
+  DATA:
+    FILE = allupi_simdat_1928.dat;  
+    FORMAT IS FREE;              
+  
+  VARIABLE:
+    NAMES = x1 x2 x3 
+    	    m1 m2 m3 m4 m5 m6 
+    	    m7 m8 m9 m10 m11 m12 
+    	    y1 y2 y3
+    	    x1m1 x1m2 x1m3 x1m4 x1m5 x1m6 
+    	    x1m7 x1m8 x1m9 x1m10 x1m11 x1m12 
+    	    x2m1 x2m2 x2m3 x2m4 x2m5 x2m6 
+    	    x2m7 x2m8 x2m9 x2m10 x2m11 x2m12 
+    	    x3m1 x3m2 x3m3 x3m4 x3m5 x3m6 
+    	    x3m7 x3m8 x3m9 x3m10 x3m11 x3m12;
+    USEVARIABLES = x1-x3m12;
+          
+  ANALYSIS:
+    TYPE = general;
+    ESTIMATOR = MLR;
+  MODEL:
+    !measurement model
+    X BY x3 x2 x1;  
+    X (var_X);
+    M BY m12 m11 m10 m9 m8 m7 m6 m5 m4 m3 m2 m1;  
+    M (var_M);
+    Y BY y3 y2 y1;  
+    Y (resvar_Y);
+    XM BY x3m12 x3m11 x3m10 x3m9 x3m8 x3m7 x3m6 x3m5 x3m4 x3m3 x3m2 x3m1
+         x2m12 x2m11 x2m10 x2m9 x2m8 x2m7 x2m6 x2m5 x2m4 x2m3 x2m2 x2m1
+         x1m12 x1m11 x1m10 x1m9 x1m8 x1m7 x1m6 x1m5 x1m4 x1m3 x1m2 x1m1;
+    XM (var_XM);
+  
+    !covariances between predictors
+    X WITH M (cov_XM);
+    X WITH XM (cov_XXM);
+    M WITH XM (cov_MXM);
+  
+    !structural model
+    Y ON X (b1); 
+    Y ON M (b2);
+    Y ON XM (b3);
+            
+  MODEL CONSTRAINT:
+            
+    NEW(var_Y std_b1 std_b2 std_b3);  
+    var_Y = resvar_Y + 
+     (b1^2 * var_X + 
+      b2^2 * var_M + 
+      b3^2 * var_XM + 
+      2 * b1 * b2 * cov_XM + 
+      2 * b1 * b3 * cov_XXM + 
+      2 * b2 * b3 * cov_MXM);
+      
+      std_b1 = b1 * sqrt(var_X) / sqrt(var_Y);
+      std_b2 = b2 * sqrt(var_M) / sqrt(var_Y);
+      std_b3 = b3 * sqrt(var_X) * sqrt(var_M) / sqrt(var_Y);
+  
+  OUTPUT:
+    sampstat tech1 CINTERVAL;  
+    
+  SAVEDATA:
+    RESULTS = allupi_results_1928.dat;
+

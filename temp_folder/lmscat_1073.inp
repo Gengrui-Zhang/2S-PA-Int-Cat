@@ -1,0 +1,44 @@
+
+TITLE: Latent Moderated Structural (LMS) Model
+
+DATA:
+  FILE = lmscat_simdat_1073.dat;  
+  FORMAT IS FREE;              
+
+VARIABLE:
+  NAMES = x1 x2 x3 
+  	    m1 m2 m3 m4 m5 m6 
+  	    m7 m8 m9 m10 m11 m12 
+  	    y1 y2 y3;  
+  USEVARIABLES = x1 x2 x3 
+  		    m1 m2 m3 m4 m5 m6 
+  		    m7 m8 m9 m10 m11 m12 
+          y1 y2 y3;  
+  MISSING = ALL (-999);  
+  CATEGORICAL = x1 x2 x3 m1 m2 m3 m4 m5 m6 m7 m8 m9 m10 m11 m12; 
+
+ANALYSIS:
+  TYPE = RANDOM;    
+  ESTIMATOR = MLR;  
+  ALGORITHM = INTEGRATION;  
+
+MODEL:
+  X BY x1* x2-x3;   
+  M BY m1* m2-m12;   
+  Y BY y1* y2-y3;   
+  XM | X XWITH M;  
+
+  Y ON X M XM;   
+
+  X@1;  ! Fix variance of X
+  M@1;  ! Fix variance of M
+  Y@1;  ! Fix (residual) variance of Y
+  
+  X WITH M;
+
+OUTPUT:
+  sampstat standardized tech1 CINTERVAL;  
+  
+SAVEDATA:
+  RESULTS = lmscat_results_1073.dat;
+
