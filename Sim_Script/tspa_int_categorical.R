@@ -36,7 +36,7 @@ FIXED <- list(gamma_x = 0.3,
               )
 
 # Temporary directory
-FIXED$temp_session <- "/Users/jimmy_z/R Projects/2S-PA-Int-Cat/temp_folder"
+FIXED$temp_session <- here("temp_folder")
 
 # All-pair UPI syntax
 FIXED$allupi_syntax <- "
@@ -474,8 +474,8 @@ generate_dat <- function(condition, fixed_objects = NULL) {
     total_error <- numerator * (1 - rel) / rel
     err_var <- weights * total_error
     # Check
-    composite_rel <- numerator / (numerator + sum(err_var))
-    cat("Composite reliability: ", round(composite_rel, 5), "\n")
+    # composite_rel <- numerator / (numerator + sum(err_var))
+    # cat("Composite reliability: ", round(composite_rel, 5), "\n")
     return(err_var)
   }
   
@@ -656,332 +656,397 @@ generate_fsdat <- function (dat) {
 
 analyze_allupi <- function (condition, dat, fixed_objects = NULL) {
   
-  # read data
-  df <- dat$dat
+  # Initialize a local warning counter
+  local_warning_counter <- 0
   
-  # Product indicators
-  pi_x <- c("x1", "x2", "x3")
-  pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
-            "m7", "m8", "m9", "m10", "m11", "m12")
-  pi_xm <- as.vector(t(outer(pi_x, pi_m, paste0)))
-  
-  df_c <- df %>%
-    mutate(across(c(pi_x, pi_m), ~ . - mean(.)))
-  
-  pi_df <- indProd(df_c, 
-                    var1 = pi_x,
-                    var2 = pi_m,
-                    match = FALSE, 
-                    meanC = T, 
-                    residualC = F, 
-                    doubleMC = T,
-                    namesProd = pi_xm) # using the DMC strategy
-  
-  # Run Mplus model
-  temp_session <- fixed_objects$temp_session
-  df_name <- file.path(temp_session,
-                        sprintf("allupi_simdat_%s.dat", condition$REPLICATION))
-  write.table(pi_df,
-              file = df_name,
-              row.names = FALSE, col.names = FALSE, quote = FALSE
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # read data
+      df <- dat$dat
+      
+      # Product indicators
+      pi_x <- c("x1", "x2", "x3")
+      pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
+                "m7", "m8", "m9", "m10", "m11", "m12")
+      pi_xm <- as.vector(t(outer(pi_x, pi_m, paste0)))
+      
+      df_c <- df %>%
+        mutate(across(any_of(c(pi_x, pi_m)), ~ . - mean(., na.rm = TRUE)))
+      
+      pi_df <- indProd(df_c, 
+                        var1 = pi_x,
+                        var2 = pi_m,
+                        match = FALSE, 
+                        meanC = T, 
+                        residualC = F, 
+                        doubleMC = T,
+                        namesProd = pi_xm) # using the DMC strategy
+      
+      # Run Mplus model
+      temp_session <- fixed_objects$temp_session
+      df_name <- file.path(temp_session,
+                            sprintf("allupi_simdat_%s.dat", condition$REPLICATION))
+      write.table(pi_df,
+                  file = df_name,
+                  row.names = FALSE, col.names = FALSE, quote = FALSE
+      )
+      mplus_files <- sprintf(
+        c("allupi_simdat_%s.dat", "allupi_%s.inp", "allupi_%s.out", "allupi_results_%s.dat"),
+        condition$REPLICATION
+      )
+      writeLines(gsub("repid", replacement = condition$REPLICATION,
+                      x = fixed_objects$allupi_syntax),
+                 con = file.path(temp_session, mplus_files[[2]]))
+      MplusAutomation::runModels(
+        temp_session,
+        filefilter = mplus_files[[2]],
+        #Mplus_command = "/opt/mplus/8.7/mplus",
+        Mplus_command = "/Applications/Mplus/mplus")
+      
+      # Extract results
+      # Read lines
+      res_allupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+      # Extract Parameters
+      est_ust <- res_allupi[159:161]
+      se_ust <- res_allupi[331:333]
+      est_std <- res_allupi[170:172]
+      se_std <- res_allupi[342:344]
+      
+      # Create the output vector
+      out <- c(est_ust, se_ust, est_std, se_std, local_warning_counter)  
+      names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                      "x_se_ust", "m_se_ust", "xm_se_ust", 
+                      "x_est_std", "m_est_std", "xm_est_std",
+                      "x_se_std", "m_se_std", "xm_se_std",
+                      "warning")
+      
+      # Return
+      return(out)
+    },
+      warning = function(w) {
+        # Increment the local warning counter
+        local_warning_counter <<- local_warning_counter + 1
+      }
   )
-  mplus_files <- sprintf(
-    c("allupi_simdat_%s.dat", "allupi_%s.inp", "allupi_%s.out", "allupi_results_%s.dat"),
-    condition$REPLICATION
-  )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$allupi_syntax),
-             con = file.path(temp_session, mplus_files[[2]]))
-  MplusAutomation::runModels(
-    temp_session,
-    filefilter = mplus_files[[2]],
-    #Mplus_command = "/opt/mplus/8.7/mplus",
-    Mplus_command = "/Applications/Mplus/mplus")
-  
-  # Extract results
-  # Read lines
-  res_allupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
-  # Extract Parameters
-  est_ust <- res_allupi[159:161]
-  se_ust <- res_allupi[331:333]
-  est_std <- res_allupi[170:172]
-  se_std <- res_allupi[342:344]
-  
-  # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std)  
-  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
-                  "x_se_ust", "m_se_ust", "xm_se_ust", 
-                  "x_est_std", "m_est_std", "xm_est_std",
-                  "x_se_std", "m_se_std", "xm_se_std")
-  
-  # Return
-  return(out)
 }
 
 analyze_matchupi <- function (condition, dat, fixed_objects = NULL) {
+ 
+  # Initialize a local warning counter
+  local_warning_counter <- 0
   
-  # read data
-  df <- dat$dat
-  lambda_x <- dat$lambda_x
-  lambda_m <- dat$lambda_m
-  pi_x <- c("x1", "x2", "x3")
-  pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
-            "m7", "m8", "m9", "m10", "m11", "m12")
-
-  # Order indicators by reliability
-  rel_x <- lambda_x^2 / (lambda_x^2 + 1) # Error variances constrained to 1
-  rel_m <- lambda_m^2 / (lambda_m^2 + 1) # Error variances constrained to 1
-  
-  # Find the 3 most reliable items in each set
-  top_x <- order(rel_x, decreasing = TRUE)[1:3]
-  top_m <- order(rel_m, decreasing = TRUE)[1:3]
-  selected_x <- pi_x[top_x]
-  selected_m <- pi_m[top_m]
-
-  # Form PIs
-  df_c <- df %>%
-    mutate(across(c(pi_x, pi_m), ~ . - mean(.)))
-  pi_xm <- paste0(selected_x, selected_m)
-  
-  pi_df <- indProd(df_c, 
-                    var1 = selected_x,
-                    var2 = selected_m,
-                    match = TRUE, 
-                    meanC = T, 
-                    residualC = F, 
-                    doubleMC = T,
-                    namesProd = pi_xm) # using the DMC strategy
-  
-  # Run Mplus model
-  temp_session <- fixed_objects$temp_session
-  df_name <- file.path(temp_session,
-                        sprintf("matchupi_simdat_%s.dat", condition$REPLICATION))
-  write.table(pi_df,
-              file = df_name,
-              row.names = FALSE, col.names = FALSE, quote = FALSE
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # read data
+      df <- dat$dat
+      lambda_x <- dat$lambda_x
+      lambda_m <- dat$lambda_m
+      pi_x <- c("x1", "x2", "x3")
+      pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
+                "m7", "m8", "m9", "m10", "m11", "m12")
+    
+      # Order indicators by reliability
+      rel_x <- lambda_x^2 / (lambda_x^2 + 1) # Error variances constrained to 1
+      rel_m <- lambda_m^2 / (lambda_m^2 + 1) # Error variances constrained to 1
+      
+      # Find the 3 most reliable items in each set
+      top_x <- order(rel_x, decreasing = TRUE)[1:3]
+      top_m <- order(rel_m, decreasing = TRUE)[1:3]
+      selected_x <- pi_x[top_x]
+      selected_m <- pi_m[top_m]
+    
+      # Form PIs
+      df_c <- df %>%
+        mutate(across(any_of(c(pi_x, pi_m)), ~ . - mean(., na.rm = TRUE)))
+      pi_xm <- paste0(selected_x, selected_m)
+      
+      pi_df <- indProd(df_c, 
+                        var1 = selected_x,
+                        var2 = selected_m,
+                        match = TRUE, 
+                        meanC = T, 
+                        residualC = F, 
+                        doubleMC = T,
+                        namesProd = pi_xm) # using the DMC strategy
+      
+      # Run Mplus model
+      temp_session <- fixed_objects$temp_session
+      df_name <- file.path(temp_session,
+                            sprintf("matchupi_simdat_%s.dat", condition$REPLICATION))
+      write.table(pi_df,
+                  file = df_name,
+                  row.names = FALSE, col.names = FALSE, quote = FALSE
+      )
+      mplus_files <- sprintf(
+        c("matchupi_simdat_%s.dat", "matchupi_%s.inp", "matchupi_%s.out", "matchupi_results_%s.dat"),
+        condition$REPLICATION
+      )
+      writeLines(gsub("repid", replacement = condition$REPLICATION,
+                      x = fixed_objects$matchupi_syntax),
+                 con = file.path(temp_session, mplus_files[[2]]))
+      MplusAutomation::runModels(
+        temp_session,
+        filefilter = mplus_files[[2]],
+        #Mplus_command = "/opt/mplus/8.7/mplus",
+        Mplus_command = "/Applications/Mplus/mplus")
+      
+      # Extract results
+      # Read lines
+      res_matchupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+      # Extract Parameters
+      est_ust <- res_matchupi[60:62]
+      se_ust <- res_matchupi[133:135]
+      est_std <- res_matchupi[71:73]
+      se_std <- res_matchupi[144:146]
+      
+      # Create the output vector
+      out <- c(est_ust, se_ust, est_std, se_std, local_warning_counter)  
+      names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                      "x_se_ust", "m_se_ust", "xm_se_ust", 
+                      "x_est_std", "m_est_std", "xm_est_std",
+                      "x_se_std", "m_se_std", "xm_se_std",
+                      "warning")
+      
+      # Return
+      return(out)
+    },
+      warning = function(w) {
+        # Increment the local warning counter
+        local_warning_counter <<- local_warning_counter + 1
+      }
   )
-  mplus_files <- sprintf(
-    c("matchupi_simdat_%s.dat", "matchupi_%s.inp", "matchupi_%s.out", "matchupi_results_%s.dat"),
-    condition$REPLICATION
-  )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$matchupi_syntax),
-             con = file.path(temp_session, mplus_files[[2]]))
-  MplusAutomation::runModels(
-    temp_session,
-    filefilter = mplus_files[[2]],
-    #Mplus_command = "/opt/mplus/8.7/mplus",
-    Mplus_command = "/Applications/Mplus/mplus")
-  
-  # Extract results
-  # Read lines
-  res_matchupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
-  # Extract Parameters
-  est_ust <- res_matchupi[60:62]
-  se_ust <- res_matchupi[133:135]
-  est_std <- res_matchupi[71:73]
-  se_std <- res_matchupi[144:146]
-  
-  # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std)  
-  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
-                  "x_se_ust", "m_se_ust", "xm_se_ust", 
-                  "x_est_std", "m_est_std", "xm_est_std",
-                  "x_se_std", "m_se_std", "xm_se_std")
-  
-  # Return
-  return(out)
 }
 
 analyze_parcelupi <- function (condition, dat, fixed_objects = NULL) {
   
-  # read data
-  df <- dat$dat
-  lambda_x <- dat$lambda_x
-  lambda_m <- dat$lambda_m
-  pi_x <- c("x1", "x2", "x3")
-  pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
-            "m7", "m8", "m9", "m10", "m11", "m12")
-  m_names <- paste0("m", 1:length(lambda_m))
+  # Initialize a local warning counter
+  local_warning_counter <- 0
   
-  # Mean-centering
-  df_c <- df %>%
-    mutate(across(c(pi_x, pi_m), ~ . - mean(.)))
-  
-  # Order indicators by reliability
-  rel_m <- lambda_m^2 / (lambda_m^2 + 1)
-  order_m <- order(rel_m, decreasing = TRUE)
-  m_ordered <- m_names[order_m]
-  # order by factorial algorithm
-  parcel_assign <- list(
-    p1 = c(m_ordered[1], m_ordered[12], m_ordered[4], m_ordered[9]),
-    p2 = c(m_ordered[2], m_ordered[11], m_ordered[5], m_ordered[8]),
-    p3 = c(m_ordered[3], m_ordered[10], m_ordered[6], m_ordered[7])
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # read data
+      df <- dat$dat
+      lambda_x <- dat$lambda_x
+      lambda_m <- dat$lambda_m
+      pi_x <- c("x1", "x2", "x3")
+      pi_m <- c("m1", "m2", "m3", "m4", "m5", "m6", 
+                "m7", "m8", "m9", "m10", "m11", "m12")
+      m_names <- paste0("m", 1:length(lambda_m))
+      
+      # Mean-centering
+      df_c <- df %>%
+        mutate(across(any_of(c(pi_x, pi_m)), ~ . - mean(., na.rm = TRUE)))
+      
+      # Order indicators by reliability
+      rel_m <- lambda_m^2 / (lambda_m^2 + 1)
+      order_m <- order(rel_m, decreasing = TRUE)
+      m_ordered <- m_names[order_m]
+      # order by factorial algorithm
+      parcel_assign <- list(
+        p1 = c(m_ordered[1], m_ordered[12], m_ordered[4], m_ordered[9]),
+        p2 = c(m_ordered[2], m_ordered[11], m_ordered[5], m_ordered[8]),
+        p3 = c(m_ordered[3], m_ordered[10], m_ordered[6], m_ordered[7])
+      )
+      
+      # Create parcel items
+      df_c$p1 <- rowMeans(df_c[, parcel_assign$p1])
+      df_c$p2 <- rowMeans(df_c[, parcel_assign$p2])
+      df_c$p3 <- rowMeans(df_c[, parcel_assign$p3])
+      
+      # Find the 3 most reliable items x
+      rel_x <- lambda_x^2 / (lambda_x^2 + 1) # Error variances constrained to 1
+      top_x <- order(rel_x, decreasing = TRUE)[1:3]
+      selected_x <- pi_x[top_x]
+      
+      # Form PIs
+      pi_xm <- paste0(selected_x, names(parcel_assign))
+    
+      pi_df <- indProd(df_c, 
+                       var1 = selected_x,
+                       var2 = names(parcel_assign),
+                       match = TRUE, 
+                       meanC = T, 
+                       residualC = F, 
+                       doubleMC = T,
+                       namesProd = pi_xm) # using the DMC strategy
+      
+      # Run Mplus model
+      temp_session <- fixed_objects$temp_session
+      df_name <- file.path(temp_session,
+                           sprintf("parcelupi_simdat_%s.dat", condition$REPLICATION))
+      write.table(pi_df,
+                  file = df_name,
+                  row.names = FALSE, col.names = FALSE, quote = FALSE
+      )
+      mplus_files <- sprintf(
+        c("parcelupi_simdat_%s.dat", "parcelupi_%s.inp", "parcelupi_%s.out", "parcelupi_results_%s.dat"),
+        condition$REPLICATION
+      )
+      writeLines(gsub("repid", replacement = condition$REPLICATION,
+                      x = fixed_objects$parcelupi_syntax),
+                 con = file.path(temp_session, mplus_files[[2]]))
+      MplusAutomation::runModels(
+        temp_session,
+        filefilter = mplus_files[[2]],
+        #Mplus_command = "/opt/mplus/8.7/mplus",
+        Mplus_command = "/Applications/Mplus/mplus")
+      
+      # Extract results
+      # Read lines
+      res_parcelupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+      # Extract Parameters
+      est_ust <- res_parcelupi[60:62]
+      se_ust <- res_parcelupi[133:135]
+      est_std <- res_parcelupi[71:73]
+      se_std <- res_parcelupi[144:146]
+      
+      # Create the output vector
+      out <- c(est_ust, se_ust, est_std, se_std, local_warning_counter)  
+      names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                      "x_se_ust", "m_se_ust", "xm_se_ust", 
+                      "x_est_std", "m_est_std", "xm_est_std",
+                      "x_se_std", "m_se_std", "xm_se_std",
+                      "warning")
+      
+      # Return
+      return(out)
+  },
+      warning = function(w) {
+        # Increment the local warning counter
+        local_warning_counter <<- local_warning_counter + 1
+      }
   )
-  
-  # Create parcel items
-  df_c$p1 <- rowMeans(df_c[, parcel_assign$p1])
-  df_c$p2 <- rowMeans(df_c[, parcel_assign$p2])
-  df_c$p3 <- rowMeans(df_c[, parcel_assign$p3])
-  
-  # Find the 3 most reliable items x
-  rel_x <- lambda_x^2 / (lambda_x^2 + 1) # Error variances constrained to 1
-  top_x <- order(rel_x, decreasing = TRUE)[1:3]
-  selected_x <- pi_x[top_x]
-  
-  # Form PIs
-  pi_xm <- paste0(selected_x, names(parcel_assign))
-
-  pi_df <- indProd(df_c, 
-                   var1 = selected_x,
-                   var2 = names(parcel_assign),
-                   match = TRUE, 
-                   meanC = T, 
-                   residualC = F, 
-                   doubleMC = T,
-                   namesProd = pi_xm) # using the DMC strategy
-  
-  # Run Mplus model
-  temp_session <- fixed_objects$temp_session
-  df_name <- file.path(temp_session,
-                       sprintf("parcelupi_simdat_%s.dat", condition$REPLICATION))
-  write.table(pi_df,
-              file = df_name,
-              row.names = FALSE, col.names = FALSE, quote = FALSE
-  )
-  mplus_files <- sprintf(
-    c("parcelupi_simdat_%s.dat", "parcelupi_%s.inp", "parcelupi_%s.out", "parcelupi_results_%s.dat"),
-    condition$REPLICATION
-  )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$parcelupi_syntax),
-             con = file.path(temp_session, mplus_files[[2]]))
-  MplusAutomation::runModels(
-    temp_session,
-    filefilter = mplus_files[[2]],
-    #Mplus_command = "/opt/mplus/8.7/mplus",
-    Mplus_command = "/Applications/Mplus/mplus")
-  
-  # Extract results
-  # Read lines
-  res_parcelupi <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
-  # Extract Parameters
-  est_ust <- res_parcelupi[60:62]
-  se_ust <- res_parcelupi[133:135]
-  est_std <- res_parcelupi[71:73]
-  se_std <- res_parcelupi[144:146]
-  
-  # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std)  
-  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
-                  "x_se_ust", "m_se_ust", "xm_se_ust", 
-                  "x_est_std", "m_est_std", "xm_est_std",
-                  "x_se_std", "m_se_std", "xm_se_std")
-  
-  # Return
-  return(out)
 }
 
 analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
   
-  # read data
-  df <- dat$dat
+  # Initialize a local warning counter
+  local_warning_counter <- 0
   
-  fs_df <- generate_fsdat(df)
-  
-  # Run Mplus model
-  temp_session <- fixed_objects$temp_session
-  df_name <- file.path(temp_session,
-                        sprintf("2spa_simdat_%s.dat", condition$REPLICATION))
-  write.table(fs_df,
-              file = df_name,
-              row.names = FALSE, col.names = FALSE, quote = FALSE
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # read data
+      df <- dat$dat
+      
+      fs_df <- generate_fsdat(df)
+      
+      # Run Mplus model
+      temp_session <- fixed_objects$temp_session
+      df_name <- file.path(temp_session,
+                            sprintf("2spa_simdat_%s.dat", condition$REPLICATION))
+      write.table(fs_df,
+                  file = df_name,
+                  row.names = FALSE, col.names = FALSE, quote = FALSE
+      )
+      mplus_files <- sprintf(
+        c("2spa_simdat_%s.dat", "2spa_%s.inp", "2spa_%s.out", "2spa_results_%s.dat"),
+        condition$REPLICATION
+      )
+      writeLines(gsub("repid", replacement = condition$REPLICATION,
+                      x = fixed_objects$tspa_syntax),
+                 con = file.path(temp_session, mplus_files[[2]]))
+      MplusAutomation::runModels(
+        temp_session,
+        filefilter = mplus_files[[2]],
+        #Mplus_command = "/opt/mplus/8.7/mplus",
+        Mplus_command = "/Applications/Mplus/mplus")
+      
+      # Extract results
+      # Read lines
+      res_2spa <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+      # readLines(file.path(temp_session, mplus_files[[3]]))
+      
+      # Extract Parameters
+      est_ust <- res_2spa[13:15]
+      se_ust <- res_2spa[38:40]
+      est_std <- res_2spa[23:25]
+      se_std <- res_2spa[48:50]
+      
+      # Create the output vector
+      out <- c(est_ust, se_ust, est_std, se_std, local_warning_counter)  
+      names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                      "x_se_ust", "m_se_ust", "xm_se_ust", 
+                      "x_est_std", "m_est_std", "xm_est_std",
+                      "x_se_std", "m_se_std", "xm_se_std",
+                      "warning")
+      
+      # Remove temp files
+      file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
+      
+      # Return
+      return(out)
+  },
+      warning = function(w) {
+        # Increment the local warning counter
+        local_warning_counter <<- local_warning_counter + 1
+      }
   )
-  mplus_files <- sprintf(
-    c("2spa_simdat_%s.dat", "2spa_%s.inp", "2spa_%s.out", "2spa_results_%s.dat"),
-    condition$REPLICATION
-  )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$tspa_syntax),
-             con = file.path(temp_session, mplus_files[[2]]))
-  MplusAutomation::runModels(
-    temp_session,
-    filefilter = mplus_files[[2]],
-    #Mplus_command = "/opt/mplus/8.7/mplus",
-    Mplus_command = "/Applications/Mplus/mplus")
-  
-  # Extract results
-  # Read lines
-  res_2spa <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
-  # readLines(file.path(temp_session, mplus_files[[3]]))
-  
-  # Extract Parameters
-  est_ust <- res_2spa[13:15]
-  se_ust <- res_2spa[38:40]
-  est_std <- res_2spa[23:25]
-  se_std <- res_2spa[48:50]
-  
-  # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std)  
-  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
-                  "x_se_ust", "m_se_ust", "xm_se_ust", 
-                  "x_est_std", "m_est_std", "xm_est_std",
-                  "x_se_std", "m_se_std", "xm_se_std")
-  
-  # Remove temp files
-  file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
-  
-  # Return
-  return(out)
 }
 
 analyze_lmscat <- function (condition, dat, fixed_objects = NULL) {
 
-  # read data
-  df <- dat$dat
+  # Initialize a local warning counter
+  local_warning_counter <- 0
   
-  temp_session <- fixed_objects$temp_session
-  df_name <- file.path(temp_session,
-                        sprintf("lmscat_simdat_%s.dat", condition$REPLICATION))
-  write.table(df,
-              file = df_name,
-              row.names = FALSE, col.names = FALSE, quote = FALSE
+  # Fit the model and capture warnings
+  result <- withCallingHandlers(
+    {
+      # read data
+      df <- dat$dat
+      
+      temp_session <- fixed_objects$temp_session
+      df_name <- file.path(temp_session,
+                            sprintf("lmscat_simdat_%s.dat", condition$REPLICATION))
+      write.table(df,
+                  file = df_name,
+                  row.names = FALSE, col.names = FALSE, quote = FALSE
+      )
+      mplus_files <- sprintf(
+        c("lmscat_simdat_%s.dat", "lmscat_%s.inp", "lmscat_%s.out", "lmscat_results_%s.dat"),
+        condition$REPLICATION
+      )
+      writeLines(gsub("repid", replacement = condition$REPLICATION,
+                      x = fixed_objects$lmscat_syntax),
+                 con = file.path(temp_session, mplus_files[[2]]))
+      MplusAutomation::runModels(
+        temp_session,
+        filefilter = mplus_files[[2]],
+        #Mplus_command = "/opt/mplus/8.7/mplus",
+        Mplus_command = "/Applications/Mplus/mplus")
+      
+      # Extract results
+      # Read lines
+      res_lmscat <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
+      # readLines(file.path(temp_session, mplus_files[[3]]))
+      
+      est_ust <- res_lmscat[25:27]
+      se_ust <- res_lmscat[104:106]
+      est_std <- res_lmscat[183:185]
+      se_std <- res_lmscat[262:264]
+      
+      # Create the output vector
+      out <- c(est_ust, se_ust, est_std, se_std, local_warning_counter)  
+      names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
+                      "x_se_ust", "m_se_ust", "xm_se_ust", 
+                      "x_est_std", "m_est_std", "xm_est_std",
+                      "x_se_std", "m_se_std", "xm_se_std",
+                      "warning")
+      
+      # Remove temp files
+      file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
+      
+      # Return
+      return(out)
+    },
+      warning = function(w) {
+        # Increment the local warning counter
+        local_warning_counter <<- local_warning_counter + 1
+      }
   )
-  mplus_files <- sprintf(
-    c("lmscat_simdat_%s.dat", "lmscat_%s.inp", "lmscat_%s.out", "lmscat_results_%s.dat"),
-    condition$REPLICATION
-  )
-  writeLines(gsub("repid", replacement = condition$REPLICATION,
-                  x = fixed_objects$lmscat_syntax),
-             con = file.path(temp_session, mplus_files[[2]]))
-  MplusAutomation::runModels(
-    temp_session,
-    filefilter = mplus_files[[2]],
-    #Mplus_command = "/opt/mplus/8.7/mplus",
-    Mplus_command = "/Applications/Mplus/mplus")
-  
-  # Extract results
-  # Read lines
-  res_lmscat <- as.numeric(unlist(strsplit(trimws(readLines(file.path(temp_session, mplus_files[[4]]))), "\\s+")))
-  # readLines(file.path(temp_session, mplus_files[[3]]))
-  
-  est_ust <- res_lmscat[25:27]
-  se_ust <- res_lmscat[104:106]
-  est_std <- res_lmscat[183:185]
-  se_std <- res_lmscat[262:264]
-  
-  # Create the output vector
-  out <- c(est_ust, se_ust, est_std, se_std)  
-  names(out) <- c("x_est_ust", "m_est_ust", "xm_est_ust",
-                  "x_se_ust", "m_se_ust", "xm_se_ust", 
-                  "x_est_std", "m_est_std", "xm_est_std",
-                  "x_se_std", "m_se_std", "xm_se_std")
-  
-  # Remove temp files
-  file.remove(file.path(temp_session, mplus_files), recursive = TRUE)
-  
-  # Return
-  return(out)
 }
 
 # analyze_lmsfs <- function (condition, dat, fixed_objects = NULL) {
@@ -1126,7 +1191,7 @@ warning_sum <- function(count) {
 
 # Evaluation Function
 evaluate_res <- function (condition, results, fixed_objects = NULL) {
-  
+
   # Population parameter
   pop_par <- condition$gamma_xm
   
@@ -1135,7 +1200,8 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
   est_ust <- results[, grep("xm_est_ust", colnames(results)), drop = FALSE]
   se_std <- results[, grep("xm_se_std", colnames(results)), drop = FALSE]
   se_ust <- results[, grep("xm_se_ust", colnames(results)), drop = FALSE]
-
+  warnings <- results[, grep(".warning", colnames(results)), drop = FALSE]
+  
   c(raw_bias = robust_bias(est_std,
                            se_std,
                            pop_par,
@@ -1171,27 +1237,29 @@ evaluate_res <- function (condition, results, fixed_objects = NULL) {
     power_std = ci_stats(est_std, se_std, pop_par,
                           "Power"),
     rmse = RMSE(na.omit(est_std),
-                parameter = pop_par)
-    # warning_total = warning_sum(warnings)
+                parameter = pop_par),
+    warning_total = warning_sum(warnings)
   )
 }
 
 # ========================================= Run Experiment ========================================= #
-# Trial
-# trial <- runSimulation(design = DESIGNFACTOR[1,],
+
+# trial <- runSimulation(design = DESIGNFACTOR[1:5,],
 #               replications = 3,
 #               generate = generate_dat,
-#               analyse = list(upi = analyze_upi,
+#               analyse = list(allupi = analyze_allupi,
+#                              matchupi = analyze_matchupi,
+#                              parcelupi = analyze_parcelupi,
 #                              tspa = analyze_2spamplus,
-#                              lms = analyze_lms,
-#                              lmsfs = analyze_lmsfs),
+#                              lmscat = analyze_lmscat),
 #               summarise = evaluate_res,
 #               fixed_objects = FIXED,
-#               seed = rep(61543, nrow(DESIGNFACTOR[1,])),
+#               seed = rep(61543, nrow(DESIGNFACTOR[1:5,])),
 #               control = list(include_reps = TRUE),
 #               packages = "lavaan",
 #               parallel = TRUE,
-#               ncores = 30)
+#               ncores = 8)
+
 SimClean()
 runSimulation(design = DESIGNFACTOR,
               replications = 2000,
@@ -1205,7 +1273,7 @@ runSimulation(design = DESIGNFACTOR,
               fixed_objects = FIXED,
               seed = rep(61543, nrow(DESIGNFACTOR)),
               control = list(include_reps = TRUE),
-              packages = "lavaan", 
+              packages = "lavaan",
               filename = "categorical_07202025",
               parallel = TRUE,
               ncores = 30,
