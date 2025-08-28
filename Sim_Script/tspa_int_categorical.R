@@ -953,7 +953,7 @@ analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
         temp_session,
         filefilter = mplus_files[[2]],
         Mplus_command = "/opt/mplus/8.7/mplus")
-        #Mplus_command = "/Applications/Mplus/mplus"
+        # Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
@@ -962,9 +962,9 @@ analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
       
       # Extract Parameters
       est_ust <- res_2spa[13:15]
-      se_ust <- res_2spa[38:40]
-      est_std <- res_2spa[23:25]
-      se_std <- res_2spa[48:50]
+      se_ust <- res_2spa[39:41]
+      est_std <- res_2spa[24:26]
+      se_std <- res_2spa[50:52]
       
       # Create the output vector
       out <- c(est_ust, se_ust, est_std, se_std, local_warning_counter)  
@@ -1015,8 +1015,8 @@ analyze_lmscat <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        Mplus_command = "/opt/mplus/8.7/mplus")
-        #Mplus_command = "/Applications/Mplus/mplus"
+        #Mplus_command = "/opt/mplus/8.7/mplus"
+        Mplus_command = "/Applications/Mplus/mplus")
       
       # Extract results
       # Read lines

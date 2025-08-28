@@ -78,39 +78,6 @@
   \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
 \fi
 \makeatother
-% definitions for citeproc citations
-\NewDocumentCommand\citeproctext{}{}
-\NewDocumentCommand\citeproc{mm}{%
-  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
-\makeatletter
- % allow citations to break across lines
- \let\@cite@ofmt\@firstofone
- % avoid brackets around text for \cite:
- \def\@biblabel#1{}
- \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
-\makeatother
-\newlength{\cslhangindent}
-\setlength{\cslhangindent}{1.5em}
-\newlength{\csllabelwidth}
-\setlength{\csllabelwidth}{3em}
-\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
- {\begin{list}{}{%
-  \setlength{\itemindent}{0pt}
-  \setlength{\leftmargin}{0pt}
-  \setlength{\parsep}{0pt}
-  % turn on hanging indent if param 1 is 1
-  \ifodd #1
-   \setlength{\leftmargin}{\cslhangindent}
-   \setlength{\itemindent}{-1\cslhangindent}
-  \fi
-  % set entry spacing
-  \setlength{\itemsep}{#2\baselineskip}}}
- {\end{list}}
-\usepackage{calc}
-\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
-\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
-\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
-\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
 \ifLuaTeX
 \usepackage[bidi=basic]{babel}
 \else
@@ -240,11 +207,12 @@ Two-stage path analysis with interaction for categorical variables.
 
 We adopted a fully crossed design with varying conditions of sample
 size, composite reliability of scale, interaction effect, and item
-skewness, based on the study design of Aytürk et al.~(2020) and
-(\textbf{hsiaoModelingMeasurementErrors2021?}). We compared the accuracy of UPI
+skewness, based on the study design of Aytürk et al.~(2020) and (Hsiao \& Lai, 2021). We compared the accuracy of UPI
 with three product--indicator formations (all-pair, matched-pair, and
 parceled-pair), LMS for categorical items, and 2S-PA-Int in recovering
-the latent interaction effect.
+the latent interaction effect. A summary table of study design was shown in Table (To be updated).
+
+The simulation script was drafted and structured using SimDesign package; the dataset was generated and analyzed using Mplus 8.8 (Muthén \& Muthén, 1998/2017); the entire simulation study was run using MplusAutomation 1.1.0 (Hallquist \& Wiley, 2018) on R 4.5.1 (R Core Team, 2025).
 
 \subsection{Population Structural Model}\label{population-structural-model}
 
@@ -261,7 +229,7 @@ denoted \(\gamma_{xm}\):
 &\stackrel{\text{i.i.d.}}{\sim}
 \mathcal{N}\!\left(
 \begin{bmatrix}0\\[2pt]0\end{bmatrix},
-\begin{bmatrix}1 & \rho \\ \rho & 1\end{bmatrix}
+\begin{bmatrix}1 & Corr \\ Corr & 1\end{bmatrix}
 \right),\quad
 \xi_{y_{j}} = \alpha + \gamma_{x}\,\xi_{x_{j}} + \gamma_{m}\,\xi_{m_{j}}
              + \gamma_{xm}\,\xi_{x_{j}}\xi_{m_{j}} + \zeta_{j},
@@ -273,14 +241,14 @@ the first-order latent predictor with a fixed main effect
 moderator also with a fixed main effect \(\gamma_{m} \;=\; 0.3\). Both
 exogenous factors were factors were standardized with zero means and
 unit variances. Additionally, they were pre-specified with a fixed
-correlation of \(\rho \;=\; 0.3\), and they were allowed to freely correlated with the latent interaction term. We examined two population values of
+correlation of \(Corr \;=\; 0.3\), and they were allowed to freely correlated with the latent interaction term. We examined two population values of
 the latent interaction effect: \(\gamma_{xm} \;=\; 0\) to test the null
 hypothesis (\(H_{0}\)) and \(\gamma_{xm} \;=\; 0.3\) (medium effect; Cohen,
 1992) to test the alternative hypothesis (\(H_{1}\)). The variance of
 latent outcome variable \(\xi_{y_{j}}\) was set to 1 when
 \(\gamma_{xm} \;=\; 0\) under the \(H_{0}\) condition, so that the variance
 of disturbance term
-\(\sigma^2_{\zeta} \;=\; 1 - \big(\gamma_x^2 + \gamma_m^2 + \gamma_{xm}^2 + 2\,\gamma_x\gamma_m\,\rho \big)\).
+\(\sigma^2_{\zeta} \;=\; 1 - \big(\gamma_x^2 + \gamma_m^2 + \gamma_{xm}^2 + 2\,\gamma_x\gamma_m\,Corr \big)\).
 Therefore, the values of \(\sigma^2_{\zeta}\) were adjusted according to
 the latent interaction effect size (e.g.,
 \(\sigma_\zeta^2 = 1 - \left(0.3^2 + 0.3^2 + 0 + 2 \times 0.3 \times 0.3 \times 0.3\right) = 0.766\)
@@ -290,80 +258,108 @@ explain \(23.3\%\) variance in \(\xi_{y_{j}}\).
 
 \subsection{Population Measurement Model}\label{population-measurement-model}
 
-After drawing the person-level latent scores from the structural model,
-we generated observed indicators for each construct. Let \(i\) index items with \(j=1,\ldots,K\). The latent outcome variable \(\xi_{y_j}\) was measured by three continuous indicators \((y_{1j},y_{2j},y_{3j})\) with differential loadings:
+After generating person-level latent scores from the structural model, we created observed indicators for each construct. Let \(i\) index observed items with \(i \;=\; 1,\ldots, P\). The latent outcome variable \(\xi_{y_j}\) was measured by three continuous indicators \((y_{1j} -y_{3j})\) with differential factor loadings:
 \begin{align}
-y_{ij} \;=\; \lambda_{y_i}\,\xi_{y_j} \;+\; \delta_{y_{ij}},
+y_{ij} \;=\; \lambda_{y_{i}}\,\xi_{y_{j}} \;+\; \delta_{y_{ij}},
 \qquad i = 1,2,3,
 \end{align}
-where \(\lambda_{y}\)s were sepcified as \(\{.50,\ .70,\ .90\}\), and the error variances followed
-\(\delta_{y_{ij}}\sim\mathcal{N}\!\big(0,\;1-\lambda_{y_i}^{2}\big)\).
+where the factor loadings \(\lambda_{y_{i}}\) were unstandardized and fixed at \(\{.50,\ .70,\ .90\}\), and the error variances followed normal distribution with \(\delta_{y_{ij}}\sim\mathcal{N}\!\big(0,\;1-\lambda_{y_i}^{2}\big)\).
 
-Following the design in Aytürk et al.~(2020), we set \(\xi_{j}\) with three items (i.e., \(x_{1j},\ldots,x_{2j}\)) and \(\xi_{m}\) with twelve items (i.e., \(m_{1j},\ldots,m_{12j}\)). We first formed continuous precursors with varying item loadings,
+For the predictor \(\xi_{x_{j}}\) and the moderator \(\xi_{m_{j}}\), we followed Aytürk et al.~(2020) and assigned three items to \(\xi_{x_{j}}\) (i.e., \(x_{1j},\ldots,x_{3j}\)) and twelve items to \(\xi_{m_{j}}\) (i.e., \(m_{1j},\ldots,m_{12j}\)). For each item we drew an underlying continuous precursor using a normal--ogive (cumulative probit) graded-response specification with item-specific factor loadings (Cho, 2023):
 \begin{align}
 x^{\ast}_{ij} &= \lambda_{x_i}\,\xi_{x_j} + \delta_{x_{ij}}, 
 & i=1,2,3, \\
 m^{\ast}_{ij} &= \lambda_{m_i}\,\xi_{m_j} + \delta_{m_{ij}}, 
 & i=1,\ldots,12,
 \end{align}
-where \(x_{ij}^*\) was the score of the underlying latent continuous variable for each observed categorical item \(i\). \(\delta_{x_{ij}}\) was the individual-specific error term for each
-observed indicator \(i\) which followed a normal distribution with a zero mean and a variance \(\theta_{x_{ij}}\).
+where \(x_{ij}^*\) was the score of the underlying latent continuous variable for each observed categorical item \(i\). Using the normal-ogive metric, factor loadings for \(\xi_{x_j}\) were fixed at \(1.7 \times \{0.60, 0.70, 0.80\}\), monotonically increasing across the three items, whereas the \(\xi_{m_j}\) loadings were fixed at \(1.7 \times \{0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85\}\) across the twelve items, reflecting a broad range of discrimination parameters. All factor loadings were unstandardized. The individual-specific error term for each observed indicator \(i\) (e.g., \(\delta_{x_{ij}}\)) followed a normal distribution with a zero mean and a variance \(\theta_{x_{ij}}\). To ensure the items had different factor loadings and different error variances while keeping overall measurement quality fixed, we adjusted each item's error variance before categorizing responses. Specifically, we computed the total error variance implied by the target composite reliability and distributed that total across items using a decreasing weight vector from 0.8 to 0.2 (i.e., renormalized to sum to one), which yielded heterogeneous error variances. The manipulation should achive congeneric measurement while preserving the intended composite reliability. The detail was explained in the subsection of reliability.
 
-\subsubsection{\texorpdfstring{Categories of Observed Indicators for \(\xi_{x}\) and}{Categories of Observed Indicators for \textbackslash xi\_\{x\} and}}\label{categories-of-observed-indicators-for-xi_x-and}
+Throughout, \(\xi_{x_j}\), \(\xi_{m_j}\), the item error terms (\(\delta\)s), and the distrubance term (\(\zeta\)) were assumed jointly multivariate normal with mean zero and mutually uncorrelated.
 
-Observed categorical indicators (e.g., \(x_{ij}\) for \(\xi_{x_{j}}\)) were
-generated from a normal--ogive (cumulative probit) graded response model
-with differential factor loadings (Cho, 2023). For person \(j\) and item
-\(i\) measuring latent factor \(\eta_x\), \begin{equation}
-x_{ij}^* = \lambda_{x_{i}}\xi_{x_{j}} + \delta_{x_{ij}},
-\qquad \delta_{x_{ij}} \sim \mathcal{N}(0,1),
-\end{equation} where \(x_{ij}^*\) is the score of underlying latent
-continuous variable for each observed categorical item \(i\).
-\(\delta_{x_{ij}}\) is the individual-specific error term for each
-observed indicator \(i\), which follows a standard normal distribution.
-Given \(x_{ij}^*\), the observed categorical item \(x_{ij}\) can be created
-with multiple categories through thresholding: \begin{equation}
+\subsection{Categories and Symmetry of Observed Indicators}\label{categories-and-symmetry-of-observed-indicators}
+
+We mapped the continuous precursors (i.e., \(x_{ij}^*\) and \(m_{ij}^*\)) to observed categorical responses using item-invariant thresholds within each construct. For a generic item, categories were assigned according to
+\begin{equation}
   x_{ij} =
     \begin{cases}
       0 & \text{if $x_{ij}^* < \beta_{x_{i1}}$}\\
       k & \text{if $\beta_{x_{ik}} \le x_{ij}^* < \beta_{x_{i(k + 1)}}$}\\
       K - 1 & \text{if $\beta_{x_{i(K - 1)}} \le x_{ij}^*$}
     \end{cases},      
-\end{equation} where \(\beta_{ik}\) is the threshold parameter between the
-\(k\)th and \((k + 1)\)th category for \(k = 1, 2,...,K\). The observed items
-for \(\xi_{m_{j}}\) (e.g., \(m_{ij}\)) were generated analogously.
-\(\{\tau_{m_i,k}\}\).
+\end{equation}
+where \(\beta_{ik}\) was the threshold parameter between the \(k\)th and \((k + 1)\)th category for \(k = 1, 2,...,K\).
 
-\subsection{Simulation Design}\label{simulation-design}
+Specifically, we assigned category \(0\) if the continuous precursor was below the first threshold, assigned category \(k\) and if it fell between the \(k\)th and \((k + 1)\)th thresholds, and assigned the top category if it was above the last threshold. In our design, the items of \(\xi_{x_{j}}\) were all binary, so the rule reduced to a single cut-point: \(x_{ij} = 0\) if \(x_{ij}^*\) was below the threshold and \(x_{ij} = 1\) otherwise. In the symmetric condition, the threshold was set to 0, so that the proportions of 0 and 1 were both \(50\%\). For skewed distribution, the threshold was fixed to 0.9, producing a positively skewed distribution with fewer 1s than 0s.
 
-\subsection{Material}\label{material}
+We applied the same rule to items of \(\xi_{m_{j}}\), which were designed to have five categories. Here, four common thresholds define the five categories. We used \((-1.5, -0.5, 0.5, 1.5)\) for the symmetric condition and \((0.05, 0.75, 1.55, 2.55)\) for the skewed condition, which were suggested by Aytürk et al.~(2020). The exact proportions might differ slightly by item due to congeneric property, but these threshold sets reliably created the intended symmetric versus positively skewed patterns while keeping the cut-points the same for all twelve items.
 
-\subsection{Procedure}\label{procedure}
+\subsection{Sample Size}\label{sample-size}
 
-\subsection{Data analysis}\label{data-analysis}
+We varied the total sample size across four levels, \(N \in \{100,\,250,\,500,\,2000\}\). The \(N = 100\) condition represents a deliberately demanding small-sample setting for detecting interaction effects, which are known to have comparatively low statistical power in field designs (McClelland \& Judd, 1993). The \(N=250\) condition places the design just above the range where estimation with ordinal indicators typically begins to stabilize relative to very small samples. Prior simulation work on confirmatory factor analysis (CFA) or structural equation modeling (SEM) with ordinal data showed that small \(N\) could yield bias or instability, with performance generally improving as \(N\) moved into the low hundreds (Flora \& Curran, 2004; Li, 2015) The \(N=500\) condition reflected a common medium-to-large sample in applied SEM and provided substantially greater power for the interaction than smaller samples. Finally, \(N=2000\) approximated a large-sample regime intended to probe near-asymptotic behavior of the estimators. Related interaction simulations often juxtaposed moderate samples (around \(N\!\approx\!200\)) with very large samples to benchmark asymptotics (Aytürk et al., 2020; Cham et al., 2013).
 
-We used R (Version 4.5.1; R Core Team, 2025) and the R-packages \emph{papaja} (Version 0.1.3; Aust \& Barth, 2024) and \emph{tinylabels} (Version 0.2.5; Barth, 2025) for all our analyses.
+\subsection{Reliability}\label{reliability}
+
+As we mentioned before, we varied error variances of observed indicators for \(\xi_{x_{j}}\) and \(\xi_{m_{j}}\) according to three reliability levels: \(\rho \in \{0.7,\,0.8,\,0.9\}\). For congeneric items with unit variances, the composite reliability could be computed as: \(\rho = \Sigma(\lambda_{i})^2/(\Sigma[\lambda_{i}]^2 + \theta_{i})\) (Raykov, 1997; McDonald, 1999). To reach a chosen target reliability, we computed the total residual variance required, \(\Theta_{total} =\Big(\Sigma[\lambda_i]\Big)^2\frac{1-\mathrm{\rho}}{\mathrm{\rho}}\), and then allocated this total across items using a decreasing weight pattern (i.e., from 0.8 to 0.2, and rescaled to sum to one). The manipulation set each item's residual variance to \(\theta_i=w_i\,\Theta_{\text{total}}\) where \(w_{i}\) represented the item weight. For instance, for the three \(\xi_{x_j}\) items with \(\Sigma(\lambda_{i}) = 3.57\) and \(\rho = 0.8\), the required \(\Theta_{total}\) should be 3.19. Using our provisional weights \((0.8,\,0.5,\,0.2)\) with rescaling would generate \(\boldsymbol{w_{x_{j}}} = (0.53,\,0.33,\,0.13)\), and hence \(\boldsymbol{\theta_{x_{j}}} = (1.70,\,1.06,\,0.43)\).
+
+\subsection{Condidate Analysis Models}\label{condidate-analysis-models}
+
+We conducted a Monte Carlo simulation study to examine our proposed method, 2S-PA-Int, of estimating latent interaction effects, and compare with a few widely used approaches.
+
+\subsubsection{2S-PA-Int}\label{s-pa-int}
+
+The 2S-PA-Int approach separated measurement from structural estimation while correcting for measurement error in the predictors and their interaction. In Stage 1, we estimated person-specific factor scores and posterior standard errors (SEs) for the exogenous constructs and the outcome. The three binary \(x_{j}\) indicators were fit with a 2-parameter logistic (2PL) IRT model, and the twelve ordered \(m_{j}\) indicators with a graded response model (GRM), both using the \texttt{mirt} package. From these models we obtained expected-a-posteriori (EAP) factor scores \(\hat{\xi}_{x_{j}}\) and \(\hat{\xi}_{m_{j}}\) and their SEs. For the continuous \(y_{ij}\) indicators, we estimated a single-factor model with unit-variance scaling and extracted the factor scores \(\hat{\xi}_{yj}\) with SEs. We again adopted the double-mean-centered strategy by mean centering factor score items \(\hat{\xi}_{x_{j}}\) and \(\hat{\xi}_{m_{j}}\) and then formed a mean-centered product factor score \(\widehat{\xi}_{xm_{j}} = \widehat{\xi}_{x_{j}}\widehat{\xi}_{m_{j}}-\overline{\widehat{\xi}_{x_{j}}\widehat{\xi}_{m_{j}}}\) for \(\xi_{xm_{j}}\). In Stage 2, we treated each score as a single indicator for the corresponding latent variables in Mplus and passed case-specific constants via definition variables. For each latent variable, we fixed the loading of the single indicators to their reliability proxy and fixed the residuals to the implied error variances (see Introduction).
+
+\subsubsection{UPI methods}\label{upi-methods}
+
+We estimated three UPI specifications that differ only in how product indicators for the interaction term \(\xi_{xm_{j}}\) were constructed from the observed indicators. In every case, observed items of \(\xi_{x_{j}}\) and \(\xi_{m_{j}}\) were mean-centered prior to PI formation, and the product variables were further double mean--centered to reduce multicollinearity between formed PIs and firsr-order indicators (Lin et al., 2010). For all-pair UPI, we created all \(3 \times 12 = 36\) PIs by crossing each centered \(x_{j}\) item with each centered \(m_{j}\) item. In the matched-pair UPI model, we ranked items by computing their item reliabilities, selected the three most reliable \(m_{j}\) items, and formed three one-to-one products with all \(x_{j}\) items. An example of computing item reliability was \(\rho_{x_{1}} = \lambda_{_{x_{1}}}^2/(\lambda_{_{x_{1}}}^2 + \theta_{_{x_{1}}})\). Last, since \(m_{j}\) had more indicators than \(x_{j}\) items we parceled \(m_{j}\) items and then formed PIs by pairing each parcel with one \(x_{j}\) item. Concretely, we adopted the forming strategy suggested by Rogers and Schmitt (2004) that mixed high-, mid-, and low-loading items to create item parcels, and then took averages of the three parcels. Consequently, all \(m_{j}\) items finally formed three parcels, such as \(P_{m_{1}} = (m_{1}, m_{12}, m_{4}, m_{9})/4\), \(P_{m_{2}} = (\{m_{2}, m_{11}, m_{5}, m_{8})/4\), and \(P_{m_{3}} = (\{m_{3}, m_{10}, m_{6}, m_{7})/4\). Then we ranked item reliability of \(x_{i}\) items and paired them to parcels (i.e., in our case, \(x_{1}\) was paired with \(P_{m_{1}}\), \(x_{2}\) was paired with \(P_{m_{2}}\), \(x_{3}\) was paired with \(P_{m_{3}}\)).
+
+\subsubsection{LMS-Cat}\label{lms-cat}
+
+The LMS-cat model was estimated by explicitly treating \(\xi_{x}\) and \(\xi_{m}\)items as ordered categorical in Mplus script (i.e., \(CATEGORICAL = x_{1} \; x_{2} \; ...\)). The latent interaction was estimated via maximum likelihood with numerical integration using Mplus's default STANDARD quadrature (adaptive rectangular) with 15 integration points per dimension.
+
+\subsection{Evaluation Criteria}\label{evaluation-criteria}
+
+For each method, we computed convergence rate, standardized bias, relative standard error (SE) bias, root mean squared error (RMSE), empirical Type I error, and empirical statistical power, to compare these indices to examine the performance of each method on estimating the latent interaction effect.
+
+\subsubsection{Convergence Rate}\label{convergence-rate}
+
+For each replication, the program may or may not produce an error, such as non-positive definite variance-covariance matrix or negative variance estimates, depending on the random simulated sample. The convergence rate was calculated as the proportion of replications that did not generate any error messages out of all replications.
+Sometimes extreme parameter values and standard errors could appear especially in small sample size (i.e., \(N \ = \ 100\)) even though no error messages are generated. Thus, robust versions of bias, relative SE bias, and RMSE values were used.
+
+\subsubsection{Standardized Bias}\label{standardized-bias}
+
+The standardized bias was used to evaluate how far an estimate is from its true value in standard error units. It was defined using the raw bias and standard error of a point estimate:
+
+\begin{equation}
+B(\gamma_{xm}) = R^{-1}\Sigma^{R}_{r = 1}(\hat{\gamma}_{xm_{r}} - \gamma_{xm}),
+\end{equation}
+
+\begin{equation}
+SB = \frac{B(\gamma_{xm})}{SE_{\gamma_{xm}}},
+\end{equation}
+where R was the total number of replications for \(r\) = 1, 2, \ldots, 2,000. \(B(\hat{\gamma}_{xm})\) was the averaged deviation \(\hat{\gamma}_{xm}\) from the population parameter \(\gamma_{xm}\), and \(SE_{\hat{\gamma}_{xm}}\) was the empirical standard error of \(\hat{\gamma}_{xm}\) across replications. An absolute value of \(SB \le 0.40\) was considered acceptable for each replication condition (\textbf{collinsComparisonInclusiveRestrictive2001?}).
+
+\subsubsection{Robust Relative Standard Error (SE) Bias}\label{robust-relative-standard-error-se-bias}
+
+The robust relative SE bias was computed as:
+\begin{equation}
+Robust\ Relative\ SE\ Bias = \frac{MDN(\widehat{SE_{r}}) - MAD}{MAD},
+\end{equation}
+where \(MDN\) was the median of the estimated SE values and \(MAD\) was the empirical median-absolute-deviation of SE values. An absolute value of robust relative SE bias within 10\% range was considered acceptable (\textbf{hooglandRobustnessStudiesCovariance1998?}).
+
+\subsubsection{Root Mean Squared Erorr (RMSE)}\label{root-mean-squared-erorr-rmse}
+
+The RMSE was defined as the squared root of the sum of squared bias:
+\begin{equation}
+RMSE = \sqrt{R^{-1}\Sigma^{R}_{r = 1}(\hat{\gamma}_{xm_{r}} - \gamma_{xm})^2}.
+\end{equation}
+RMSE measures the average difference between calculated interaction estimates and their true value, which can account for both bias, the systematic deviation from the true value, and variability, the spread of estimates across replications. In a 2,000 replication simulation, lower RMSE indicated greater accuracy in estimating \(\hat{\gamma}_{xm}\). RMSE provided the most informative comparison across methodologies when key factors, including sample size, model complexity, and disturbance level, are held constant in the simulation.
+
+\subsubsection{Empirical Type I Error and Statistical Power}\label{empirical-type-i-error-and-statistical-power}
+
+The empirical Type I error rate was computed as the proportion of replications in which the Wald test rejects \(H_{0}\) at the significance level \(\alpha \ = \ .05\) under the condition \(\hat{\gamma}_{xm} \ = \ 0\). The empirical power was computed similarly for the condition \(\gamma_{xm} \ = \ 0.3\).
 
 \section{Results}\label{results}
-
-\section{Discussion}\label{discussion}
-
-\newpage
-
-\section{References}\label{references}
-
-\phantomsection\label{refs}
-\begin{CSLReferences}{1}{0}
-\bibitem[\citeproctext]{ref-R-papaja}
-Aust, F., \& Barth, M. (2024). \emph{{papaja}: {Prepare} reproducible {APA} journal articles with {R Markdown}}. \url{https://doi.org/10.32614/CRAN.package.papaja}
-
-\bibitem[\citeproctext]{ref-R-tinylabels}
-Barth, M. (2025). \emph{{tinylabels}: Lightweight variable labels}. \url{https://doi.org/10.32614/CRAN.package.tinylabels}
-
-\bibitem[\citeproctext]{ref-R-base}
-R Core Team. (2025). \emph{R: A language and environment for statistical computing}. Vienna, Austria: R Foundation for Statistical Computing. Retrieved from \url{https://www.R-project.org/}
-
-\end{CSLReferences}
 
 
 \end{document}

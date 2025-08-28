@@ -7,13 +7,13 @@ library(ggplot2)
 library(rlang)
 
 # Read Data
-data_path <- here("Sim_Data", "categorical_03252025.rds")
+data_path <- here("Sim_Data", "categorical_08252025.rds")
 df <- readRDS(data_path)
 
 # Helper Function
 process_data <- function(data) {
   results <- data %>%
-    gather("var", "val", raw_bias.upi.xm_est_std:rmse.lmsfs.xm_est_std) %>%
+    gather("var", "val", raw_bias.allupi.xm_est_std:rmse.lmscat.xm_est_std) %>%
     dplyr::select(-c(REPLICATIONS:WARNINGS)) %>%
     separate(col = var, into = c("stats", "method"), sep = "\\.") %>%
     spread(stats, val) %>%
@@ -93,25 +93,37 @@ type1_pd <- process_data(type1data)
 power_pd <- process_data(powerdata)
 
 # Write the processed data
-write_csv(type1_pd, "Sim_Data/type1_03252025.csv")
-write_csv(power_pd, "Sim_Data/power_03252025.csv")
+write_csv(type1_pd, "Sim_Data/type1_08252025.csv")
+write_csv(power_pd, "Sim_Data/power_08252025.csv")
 
 # Plot the results
-type1_plot <- read.csv("Sim_Data/type1_03252025.csv")
+type1_plot <- read.csv("Sim_Data/type1_08252025.csv")
 # type1_plot <- type1_plot %>% filter(method != "reg")
-power_plot <- read.csv("Sim_Data/power_03252025.csv")
+power_plot <- read.csv("Sim_Data/power_08252025.csv")
 # power_plot <- power_plot %>% filter(method != "reg")
 
 # Standard Bias
-methods <- c("upi", "tspa", "lms", "lmsfs")
-method_labels = c(upi = "All-Pair UPI", tspa = "2S-PA-Int", 
-                  lms = "LMS", lmsfs = "LMS_FS")
-method_colors = c(upi = "#009E73", tspa = "#CC79A7", 
-                  lms = "#E69F00", lmsfs = "pink") 
-method_shapes = c(upi = 15, tspa = 18, 
-                  lms = 16, lmsfs = 17)
-method_linetypes = c(upi = "twodash", tspa = "dashed",
-                     lms = "solid", lmsfs = "dotted")
+methods <- c("allupi", "matchupi", "parcelupi", "2spa", "lmscat")
+method_labels = c(allupi = "All-Pair UPI", 
+                  matchupi = "Matched-Pair UPI",
+                  parcelupi = "Parceled-Pair UPI",
+                  tspa = "2S-PA-Int",
+                  lmscat = "Categorical LMS")
+method_colors = c(allupi = "#009E73", 
+                  matchupi = "#CC79A7",
+                  parcelupi = "#E69F00",
+                  tspa = "pink",
+                  lmscat = "cyan") 
+method_shapes = c(allupi = 15, 
+                  matchupi = 16,
+                  parcelupi = 17,
+                  tspa = 18,
+                  lmscat = 19)
+method_linetypes = c(allupi = "twodash", 
+                     matchupi = "dashed",
+                     parcelupi = "solid",
+                     tspa = "dotted",
+                     lmscat = "dotted")
 
 # Raw Bias
 raw_bias_plot <- plot_results(
