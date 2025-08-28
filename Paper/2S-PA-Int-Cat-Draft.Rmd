@@ -1,0 +1,159 @@
+---
+title             : "2S-PA-Int-Cat"
+shorttitle        : "2S-PA-Int-Cat"
+author: 
+  - name          : "Gengrui (Jimmy) Zhang"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    email         : "gengruiz@email.com"
+    role: # Contributorship roles (e.g., CRediT, https://credit.niso.org/)
+      - "Conceptualization"
+      - "Writing - Original Draft Preparation"
+      - "Writing - Review & Editing"
+affiliation:
+    
+  - id            : "1"
+    institution   : "University of Southhern California"
+abstract: |
+  Two-stage path analysis with interaction for categorical variables.
+  
+  
+  <!-- https://tinyurl.com/ybremelq -->
+keywords          : "keywords"
+wordcount         : "X"
+bibliography      : "r-references.bib"
+floatsintext      : no
+linenumbers       : yes
+draft             : no
+mask              : no
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+classoption       : "man"
+output            : papaja::apa6_pdf
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include = FALSE}
+library("papaja")
+r_refs("r-references.bib")
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+# Methods
+
+We adopted a fully crossed design with varying conditions of sample
+size, composite reliability of scale, interaction effect, and item
+skewness, based on the study design of Aytürk et al. (2020) and
+@hsiaoModelingMeasurementErrors2021. We compared the accuracy of UPI
+with three product–indicator formations (all-pair, matched-pair, and
+parceled-pair), LMS for categorical items, and 2S-PA-Int in recovering
+the latent interaction effect.
+
+## Population Structural Model
+
+We considered a latent regression model with two exogenous latent
+variables for person $j$ with $j=1,\ldots,N$, $\xi_{x_{j}}$ and
+$\xi_{_{j}}$, and one endogenous latent outcome, $\xi_{_{j}}$, as our
+population model. The primary estimand was the standardized latent
+interaction effect of $\xi_{x_{j}}$ and $\xi_{m_{j}}$ on $\xi_{y_{j}}$,
+denoted $\gamma_{xm}$:
+
+\begin{align}
+\intertext{For $j=1,\ldots,N$,}
+\begin{bmatrix}\xi_{x_{j}} \\ \xi_{m_{j}}\end{bmatrix}
+&\stackrel{\text{i.i.d.}}{\sim}
+\mathcal{N}\!\left(
+\begin{bmatrix}0\\[2pt]0\end{bmatrix},
+\begin{bmatrix}1 & Corr \\ Corr & 1\end{bmatrix}
+\right),\quad
+\xi_{y_{j}} = \alpha + \gamma_{x}\,\xi_{x_{j}} + \gamma_{m}\,\xi_{m_{j}}
+             + \gamma_{xm}\,\xi_{x_{j}}\xi_{m_{j}} + \zeta_{j},
+\end{align}
+
+where $\alpha$ was the constant intercept set to 1.2. $\xi_{x_{j}}$ was
+the first-order latent predictor with a fixed main effect
+$\gamma_{x} \;=\; 0.3$, and $\xi_{m_{j}}$ was the first-order latent
+moderator also with a fixed main effect $\gamma_{m} \;=\; 0.3$. Both
+exogenous factors were factors were standardized with zero means and
+unit variances. Additionally, they were pre-specified with a fixed
+correlation of $Corr \;=\; 0.3$, and they were allowed to freely correlated with the latent interaction term. We examined two population values of
+the latent interaction effect: $\gamma_{xm} \;=\; 0$ to test the null
+hypothesis ($H_{0}$) and $\gamma_{xm} \;=\; 0.3$ (medium effect; Cohen,
+1992) to test the alternative hypothesis ($H_{1}$). The variance of
+latent outcome variable $\xi_{y_{j}}$ was set to 1 when
+$\gamma_{xm} \;=\; 0$ under the $H_{0}$ condition, so that the variance
+of disturbance term
+$\sigma^2_{\zeta} \;=\; 1 - \big(\gamma_x^2 + \gamma_m^2 + \gamma_{xm}^2 + 2\,\gamma_x\gamma_m\,Corr \big)$.
+Therefore, the values of $\sigma^2_{\zeta}$ were adjusted according to
+the latent interaction effect size (e.g.,
+$\sigma_\zeta^2 = 1 - \left(0.3^2 + 0.3^2 + 0 + 2 \times 0.3 \times 0.3 \times 0.3\right) = 0.766$
+when $\gamma_{xm} = 0$, which indicated that the first-order latent
+predictors and the latent interaction term jointly contributed to
+explain $23.3\%$ variance in $\xi_{y_{j}}$.
+
+## Population Measurement Model
+
+After generating person-level latent scores from the structural model, we created observed indicators for each construct. Let $i$ index observed items with $i \;=\; 1,\ldots, P$. The latent outcome variable $\xi_{y_j}$ was measured by three continuous indicators $(y_{1j} -y_{3j})$ with differential factor loadings:
+\begin{align}
+y_{ij} \;=\; \lambda_{y_{i}}\,\xi_{y_{j}} \;+\; \delta_{y_{ij}},
+\qquad i = 1,2,3,
+\end{align} 
+where the factor loadings $\lambda_{y_{i}}$ were unstandardized and fixed at $\{.50,\ .70,\ .90\}$, and the error variances followed normal distribution with $\delta_{y_{ij}}\sim\mathcal{N}\!\big(0,\;1-\lambda_{y_i}^{2}\big)$. 
+
+For the predictor $\xi_{x_{j}}$ and the moderator $\xi_{m_{j}}$, we followed Aytürk et al. (2020) and assigned three items to $\xi_{x_{j}}$ (i.e., $x_{1j},\ldots,x_{3j}$) and twelve items to $\xi_{m_{j}}$ (i.e., $m_{1j},\ldots,m_{12j}$). For each item we drew an underlying continuous precursor using a normal–ogive (cumulative probit) graded-response specification with item-specific factor loadings (Cho, 2023):
+\begin{align}
+x^{\ast}_{ij} &= \lambda_{x_i}\,\xi_{x_j} + \delta_{x_{ij}}, 
+& i=1,2,3, \\
+m^{\ast}_{ij} &= \lambda_{m_i}\,\xi_{m_j} + \delta_{m_{ij}}, 
+& i=1,\ldots,12,
+\end{align} 
+where $x_{ij}^*$ was the score of the underlying latent continuous variable for each observed categorical item $i$. Using the normal-ogive metric, factor loadings for $\xi_{x_j}$ were fixed at $1.7 \times \{0.60, 0.70, 0.80\}$, monotonically increasing across the three items, whereas the $\xi_{m_j}$ loadings were fixed at $1.7 \times \{0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85\} \times 0.85$ across the twelve items, reflecting a broad range of discrimination parameters. All factor loadings were unstandardized. The individual-specific error term for each observed indicator $i$ (e.g., $\delta_{x_{ij}}$) followed a normal distribution with a zero mean and a variance $\theta_{x_{ij}}$. To ensure the items had different factor loadings and different error variances while keeping overall measurement quality fixed, we adjusted each item’s error variance before categorizing responses. Specifically, we computed the total error variance implied by the target composite reliability and distributed that total across items using a decreasing weight vector from 0.8 to 0.2 (i.e., renormalized to sum to one), which yielded heterogeneous error variances. The manipulation should achive congeneric measurement while preserving the intended composite reliability. The detail was explained in the subsection of reliability.
+
+Throughout, $\xi_{x_j}$, $\xi_{m_j}$, the item error terms ($\delta$s), and the distrubance term ($\zeta$) were assumed jointly multivariate normal with mean zero and mutually uncorrelated.
+
+### Categories and Symmetry of Observed Indicators
+
+We mapped the continuous precursors (i.e., $x_{ij}^*$ and $m_{ij}^*$) to observed categorical responses using item-invariant thresholds within each construct. For a generic item, categories were assigned according to
+\begin{equation}
+  x_{ij} =
+    \begin{cases}
+      0 & \text{if $x_{ij}^* < \beta_{x_{i1}}$}\\
+      k & \text{if $\beta_{x_{ik}} \le x_{ij}^* < \beta_{x_{i(k + 1)}}$}\\
+      K - 1 & \text{if $\beta_{x_{i(K - 1)}} \le x_{ij}^*$}
+    \end{cases},      
+\end{equation}
+where $\beta_{ik}$ was the threshold parameter between the $k$th and $(k + 1)$th category for $k = 1, 2,...,K$.
+
+Specifically, we assigned category $0$ if the continuous precursor was below the first threshold, assigned category $k$ and if it fell between the $k$th and $(k + 1)$th thresholds, and assigned the top category if it was above the last threshold. In our design, the items of $\xi_{x_{j}}$ were all binary, so the rule reduced to a single cut-point: $x_{ij} = 0$ if $x_{ij}^*$ was below the threshold and $x_{ij} = 1$ otherwise. In the symmetric condition, the threshold was set to 0, so that the proportions of 0 and 1 were both $50\%$. For skewed distribution, the threshold was fixed to 0.9, producing a positively skewed distribution with fewer 1s than 0s.
+
+We applied the same rule to items of $\xi_{m_{j}}$, which were designed to have five categories. Here, four common thresholds define the five categories. We used $(−1.5, −0.5, 0.5, 1.5)$ for the symmetric condition and $(0.05, 0.75, 1.55, 2.55)$ for the skewed condition, which were suggested by Aytürk et al. (2020). The exact proportions might differ slightly by item due to congeneric property, but these threshold sets reliably created the intended symmetric versus positively skewed patterns while keeping the cut-points the same for all twelve items.
+
+### Sample Size
+We varied the total sample size across four levels, $N \in \{100,\,250,\,500,\,2000\}$. The $N = 100$ condition represents a deliberately demanding small-sample setting for detecting interaction effects, which are known to have comparatively low statistical power in field designs (McClelland & Judd, 1993). The $N=250$ condition places the design just above the range where estimation with ordinal indicators typically begins to stabilize relative to very small samples. Prior simulation work on confirmatory factor analysis (CFA) or structural equation modeling (SEM) with ordinal data showed that small $N$ could yield bias or instability, with performance generally improving as $N$ moved into the low hundreds (Flora & Curran, 2004; Li, 2015) The $N=500$ condition reflected a common medium-to-large sample in applied SEM and provided substantially greater power for the interaction than smaller samples. Finally, $N=2000$ approximated a large-sample regime intended to probe near-asymptotic behavior of the estimators. Related interaction simulations often juxtaposed moderate samples (around $N\!\approx\!200$) with very large samples to benchmark asymptotics (Aytürk et al., 2020; Cham et al., 2013).
+
+## Material
+
+## Procedure
+
+## Data analysis
+
+We used `r cite_r("r-references.bib")` for all our analyses.
+
+# Results
+
+# Discussion
+
+\newpage
+
+# References
+
+::: {#refs custom-style="Bibliography"}
+:::
