@@ -1015,8 +1015,8 @@ analyze_lmscat <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        #Mplus_command = "/opt/mplus/8.7/mplus"
-        Mplus_command = "/Applications/Mplus/mplus")
+        Mplus_command = "/opt/mplus/8.7/mplus")
+        #Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
