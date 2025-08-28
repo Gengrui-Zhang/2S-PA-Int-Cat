@@ -701,8 +701,8 @@ analyze_allupi <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        #Mplus_command = "/opt/mplus/8.7/mplus",
-        Mplus_command = "/Applications/Mplus/mplus")
+        Mplus_command = "/opt/mplus/8.7/mplus")
+        #Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
@@ -789,8 +789,8 @@ analyze_matchupi <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        #Mplus_command = "/opt/mplus/8.7/mplus",
-        Mplus_command = "/Applications/Mplus/mplus")
+        Mplus_command = "/opt/mplus/8.7/mplus")
+        #Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
@@ -891,8 +891,8 @@ analyze_parcelupi <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        #Mplus_command = "/opt/mplus/8.7/mplus",
-        Mplus_command = "/Applications/Mplus/mplus")
+        Mplus_command = "/opt/mplus/8.7/mplus")
+        #Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
@@ -952,8 +952,8 @@ analyze_2spamplus <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        #Mplus_command = "/opt/mplus/8.7/mplus",
-        Mplus_command = "/Applications/Mplus/mplus")
+        Mplus_command = "/opt/mplus/8.7/mplus")
+        #Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
@@ -1015,8 +1015,8 @@ analyze_lmscat <- function (condition, dat, fixed_objects = NULL) {
       MplusAutomation::runModels(
         temp_session,
         filefilter = mplus_files[[2]],
-        #Mplus_command = "/opt/mplus/8.7/mplus",
-        Mplus_command = "/Applications/Mplus/mplus")
+        Mplus_command = "/opt/mplus/8.7/mplus")
+        #Mplus_command = "/Applications/Mplus/mplus"
       
       # Extract results
       # Read lines
@@ -1274,7 +1274,7 @@ runSimulation(design = DESIGNFACTOR,
               seed = rep(61543, nrow(DESIGNFACTOR)),
               control = list(include_reps = TRUE),
               packages = "lavaan",
-              filename = "categorical_07202025",
+              filename = "categorical_08252025",
               parallel = TRUE,
               ncores = 30,
               save = TRUE,
